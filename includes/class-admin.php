@@ -302,7 +302,8 @@ class CCRGPD_Admin
                         <?php else : ?>
                             <?php foreach ($forms as $id => $form) : 
                                 $config = $rgpd['forms'][$id] ?? [];
-                                $enabled = !empty($config['enabled']);
+                                // Si jamais configuré (config vide), on coche par défaut
+                                $enabled = empty($config) ? true : !empty($config['enabled']);
                                 $plugin_badge = isset($form['plugin']) ? '<span class="plugin-badge plugin-' . strtolower($form['plugin']) . '">' . esc_html($form['plugin']) . '</span>' : '';
                             ?>
                             <div class="rgpd-form <?php echo $enabled ? 'enabled' : ''; ?>">

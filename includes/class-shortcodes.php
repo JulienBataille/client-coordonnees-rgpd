@@ -88,10 +88,16 @@ class CCRGPD_Shortcodes
         $out = '';
 
         foreach ($forms as $id => $f) {
-            if (empty($rgpd['forms'][$id]['enabled'])) continue;
+            $config = $rgpd['forms'][$id] ?? [];
             
-            $c = $rgpd['forms'][$id];
-            $name = $c['name_override'] ?: $f['name'];
+            // Si jamais configuré → actif par défaut, sinon vérifier enabled
+            $isEnabled = empty($config) ? true : !empty($config['enabled']);
+            if (!$isEnabled) continue;
+            
+            // Récupérer les suggestions pour les valeurs par défaut
+            $suggestions = CCRGPD_Form_Analyzer::getSuggestions($f['name']);
+            
+            $name = ($config['name_override'] ?? '') ?: $f['name'];
             
             // Utiliser l'analyse pour générer le texte des données
             $dataText = '';
@@ -110,15 +116,15 @@ class CCRGPD_Shortcodes
             $out .= '<table class="rgpd-table" style="width:100%;border-collapse:collapse;margin-bottom:25px">';
             $out .= '<tr style="background:#f5f5f5"><th colspan="2" style="padding:12px 15px;text-align:left;border:1px solid #ddd;font-size:1.1em">' . esc_html($name) . '</th></tr>';
             $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;width:35%;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_table_data') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . wp_kses_post($dataText) . '</td></tr>';
-            $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_table_purpose') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html($c['purpose'] ?: '-') . '</td></tr>';
-            $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_table_legal') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html(CCRGPD_Constants::LEGAL_BASIS[$c['legal_basis']] ?? '-') . '</td></tr>';
-            $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_table_retention') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html(CCRGPD_Constants::RETENTION[$c['retention']] ?? '-') . '</td></tr>';
+            $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_table_purpose') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html(($config['purpose'] ?? '') ?: $suggestions['purpose'] ?: '-') . '</td></tr>';
+            $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_table_legal') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html(CCRGPD_Constants::LEGAL_BASIS[$config['legal_basis'] ?? $suggestions['legal_basis']] ?? '-') . '</td></tr>';
+            $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_table_retention') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html(CCRGPD_Constants::RETENTION[$config['retention'] ?? $suggestions['retention']] ?? '-') . '</td></tr>';
             
-            if (!empty($c['recipients'])) {
-                $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_recipients') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html($c['recipients']) . '</td></tr>';
+            if (!empty($config['recipients'])) {
+                $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_recipients') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html($config['recipients']) . '</td></tr>';
             }
-            if (!empty($c['third_party'])) {
-                $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_third_party') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html($c['third_party']) . '</td></tr>';
+            if (!empty($config['third_party'])) {
+                $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_third_party') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html($config['third_party']) . '</td></tr>';
             }
             $out .= '</table>';
         }
