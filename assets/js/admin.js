@@ -1,5 +1,5 @@
 /**
- * Coordonnées & RGPD - Admin JavaScript
+ * Coordonnées & RGPD - Admin JS
  */
 jQuery(document).ready(function($) {
     
@@ -7,52 +7,57 @@ jQuery(document).ready(function($) {
     
     // ==================== GESTION DES ONGLETS ====================
     
+    // Fonction pour mettre à jour la visibilité du bouton
+    function updateSubmitButton(target) {
+        if (target === '#tab-rgpd' || target === '#tab-shortcodes') {
+            $('#submit-main').hide();
+        } else {
+            $('#submit-main').show();
+        }
+    }
+    
+    // Initialisation: afficher le bouton sur l'onglet initial
+    var initialTab = $('.nav-tab-active').attr('href') || '#tab-coordonnees';
+    updateSubmitButton(initialTab);
+    
+    // Clic sur les onglets
     $('.nav-tab').on('click', function(e) {
         e.preventDefault();
-        
         var target = $(this).attr('href');
-        var formType = $(this).data('form');
         
-        // Mise à jour des onglets
+        // Changer l'onglet actif
         $('.nav-tab').removeClass('nav-tab-active');
         $(this).addClass('nav-tab-active');
         
-        // Mise à jour du contenu
+        // Afficher le contenu correspondant
         $('.tab-content').removeClass('active');
         $(target).addClass('active');
         
-        // Afficher/masquer le bon bouton submit
-        if (formType === 'main') {
-            $('#submit-main').show();
-        } else {
-            $('#submit-main').hide();
-        }
+        // Mettre à jour le bouton submit
+        updateSubmitButton(target);
     });
     
-    // ==================== RGPD ACCORDION ====================
-    
+    // ==================== ACCORDÉON RGPD ====================
     $('.rgpd-form-header').on('click', function(e) {
-        // Ne pas toggler si on clique sur le toggle switch
+        // Ne pas toggle si on clique sur le checkbox
         if ($(e.target).closest('.toggle').length) return;
         $(this).closest('.rgpd-form').toggleClass('open');
     });
     
+    // Toggle enabled class quand on active/désactive un formulaire
     $('.rgpd-form .toggle input').on('change', function() {
         $(this).closest('.rgpd-form').toggleClass('enabled', this.checked);
     });
     
     // ==================== FORME JURIDIQUE "AUTRE" ====================
-    
     function toggleFormeAutre() {
         var isAutre = $('#client_forme_juridique').val() === 'Autre';
         $('#forme_autre_wrap').toggle(isAutre);
     }
-    
     $('#client_forme_juridique').on('change', toggleFormeAutre);
     toggleFormeAutre(); // Init
     
-    // ==================== RECHERCHE SIRET ====================
-    
+    // ==================== HELPER POUR STATUT IMPORT ====================
     function getStatus(field, newVal) {
         var current = currentValues[field] || '';
         if (!newVal) return { cls: '', txt: '' };
@@ -64,20 +69,20 @@ jQuery(document).ready(function($) {
         };
     }
     
+    // ==================== RECHERCHE SIRET ====================
     $('#btn-search-siret').on('click', function(e) {
         e.preventDefault();
         
         var siret = $('#siret_search').val().replace(/\s/g, '');
-        
         if (siret.length < 9) {
-            $('#siret-result').html('<div class="siret-result error"><p>⚠️ Veuillez saisir au moins 9 chiffres (SIREN) ou 14 chiffres (SIRET)</p></div>');
+            $('#siret-result').html('<div class="siret-result error"><p>⚠️ Veuillez entrer un SIRET ou SIREN valide (minimum 9 chiffres)</p></div>');
             return;
         }
         
         $('#siret-spinner').addClass('active');
         $('#btn-search-siret').prop('disabled', true);
         
-        // Récupérer d'abord les valeurs actuelles
+        // D'abord récupérer les valeurs actuelles
         $.post(ccrgpd.ajax_url, {
             action: 'ccrgpd_get_current',
             nonce: ccrgpd.nonce
@@ -86,7 +91,7 @@ jQuery(document).ready(function($) {
                 currentValues = response.data;
             }
             
-            // Puis rechercher l'entreprise
+            // Ensuite rechercher l'entreprise
             $.post(ccrgpd.ajax_url, {
                 action: 'ccrgpd_search_siret',
                 nonce: ccrgpd.nonce,
@@ -99,8 +104,9 @@ jQuery(document).ready(function($) {
                     var d = r.data;
                     var html = '<div class="siret-result success">';
                     html += '<h4>✅ ' + d.raison_sociale + '</h4>';
-                    html += '<div class="import-preview"><table>';
                     
+                    // Tableau d'aperçu
+                    html += '<div class="import-preview"><table>';
                     var fields = [
                         { key: 'client_raison_sociale', label: 'Raison sociale', val: d.raison_sociale },
                         { key: 'client_forme_juridique', label: 'Forme juridique', val: d.forme_juridique },
@@ -114,23 +120,18 @@ jQuery(document).ready(function($) {
                     for (var i = 0; i < fields.length; i++) {
                         var f = fields[i];
                         var st = getStatus(f.key, f.val);
-                        html += '<tr>';
-                        html += '<td>' + f.label + '</td>';
-                        html += '<td>' + (f.val || '-') + '<span class="' + st.cls + '">' + st.txt + '</span></td>';
-                        html += '</tr>';
+                        html += '<tr><td>' + f.label + '</td><td>' + (f.val || '-') + ' <span class="' + st.cls + '">' + st.txt + '</span></td></tr>';
                     }
                     html += '</table></div>';
                     
-                    // Dirigeants
+                    // Choix du dirigeant
                     if (d.dirigeants && d.dirigeants.length > 0) {
                         html += '<div class="dirigeants-choice">';
                         html += '<strong>👤 Choisir le responsable de publication :</strong>';
                         for (var j = 0; j < d.dirigeants.length; j++) {
                             var checked = j === 0 ? ' checked' : '';
-                            html += '<label>';
-                            html += '<input type="radio" name="sel_dirigeant" value="' + j + '"' + checked + '> ';
-                            html += d.dirigeants[j].full_name + ' — <em>' + d.dirigeants[j].qualite + '</em>';
-                            html += '</label>';
+                            html += '<label><input type="radio" name="sel_dirigeant" value="' + j + '"' + checked + '> ';
+                            html += d.dirigeants[j].full_name + ' — <em>' + d.dirigeants[j].qualite + '</em></label>';
                         }
                         html += '</div>';
                     }
@@ -138,19 +139,19 @@ jQuery(document).ready(function($) {
                     // Capital (non dispo via API)
                     html += '<div class="capital-input">';
                     html += '<strong>💰 Capital social</strong> <small>(non disponible via l\'API)</small><br>';
-                    html += '<a href="' + d.annuaire_url + '" target="_blank" rel="noopener">👉 Consulter sur l\'Annuaire Entreprises</a><br><br>';
+                    html += '<a href="' + d.annuaire_url + '" target="_blank" rel="noopener">👉 Consulter sur Annuaire Entreprises</a><br><br>';
                     html += '<label>Capital : <input type="text" id="import_capital" value="' + (currentValues.client_capital || '') + '" placeholder="Ex: 10 000 €" style="width:180px"></label>';
                     html += '</div>';
                     
                     // Options d'import
                     html += '<div class="import-options">';
                     html += '<label><input type="checkbox" id="import_overwrite"> Écraser les données existantes</label>';
-                    html += '<p class="description">Si décoché, seuls les champs vides seront remplis automatiquement.</p>';
+                    html += '<p class="description">Si décoché, seuls les champs vides seront remplis</p>';
                     html += '</div>';
                     
-                    // Bouton import
+                    // Bouton d'import
                     html += '<div class="siret-actions">';
-                    html += '<button type="button" id="btn-import" class="button button-primary button-large">📥 Importer les données</button>';
+                    html += '<button type="button" id="btn-import" class="button button-primary">📥 Importer les données</button>';
                     html += '</div>';
                     
                     html += '</div>';
@@ -164,32 +165,21 @@ jQuery(document).ready(function($) {
         });
     });
     
-    // Touche Entrée dans le champ SIRET
-    $('#siret_search').on('keypress', function(e) {
-        if (e.which === 13) {
-            e.preventDefault();
-            $('#btn-search-siret').click();
-        }
-    });
-    
     // ==================== IMPORT DES DONNÉES ====================
-    
     $(document).on('click', '#btn-import', function() {
         var d = $('#siret-result').data('entreprise');
         if (!d) return;
         
         var overwrite = $('#import_overwrite').is(':checked');
-        var dirIdx = parseInt($('input[name=sel_dirigeant]:checked').val()) || 0;
-        var dirigeant = (d.dirigeants && d.dirigeants[dirIdx]) ? d.dirigeants[dirIdx].full_name : '';
+        var dirIdx = $('input[name=sel_dirigeant]:checked').val() || 0;
+        var dirigeant = d.dirigeants && d.dirigeants[dirIdx] ? d.dirigeants[dirIdx].full_name : '';
         var capital = $('#import_capital').val();
         
         // Fonction pour remplir un champ
         function setField(name, value) {
-            var $field = $('[name="' + name + '"]');
-            if (!$field.length) return;
-            
-            if (overwrite || !$field.val()) {
-                $field.val(value);
+            var $el = $('[name="' + name + '"]');
+            if (overwrite || !$el.val()) {
+                $el.val(value);
             }
         }
         
@@ -206,28 +196,24 @@ jQuery(document).ready(function($) {
             setField('client_capital', capital);
         }
         
-        // Forme juridique (select)
-        var $formeSelect = $('#client_forme_juridique');
-        if (overwrite || !$formeSelect.val()) {
+        // Forme juridique
+        var $select = $('#client_forme_juridique');
+        if (overwrite || !$select.val()) {
             // Vérifier si la forme existe dans le select
-            if ($formeSelect.find('option[value="' + d.forme_juridique + '"]').length) {
-                $formeSelect.val(d.forme_juridique).trigger('change');
+            if ($select.find('option[value="' + d.forme_juridique + '"]').length) {
+                $select.val(d.forme_juridique).trigger('change');
             } else {
-                // Sinon, mettre "Autre" et remplir le champ texte
-                $formeSelect.val('Autre').trigger('change');
+                // Sinon, mettre "Autre" et remplir le champ
+                $select.val('Autre').trigger('change');
                 $('[name="client_forme_juridique_autre"]').val(d.forme_juridique);
             }
         }
         
         // Message de confirmation
         var mode = overwrite ? 'remplacées' : 'complétées';
-        $('#siret-result').append(
-            '<div style="margin-top:15px;padding:12px 15px;background:#d1e7dd;border:1px solid #badbcc;border-radius:4px;color:#0f5132">' +
-            '✅ Données ' + mode + ' avec succès !<br><strong>N\'oubliez pas d\'enregistrer pour sauvegarder.</strong>' +
-            '</div>'
-        );
+        $('#siret-result').append('<div style="margin-top:20px;padding:15px;background:#d4edda;border:1px solid #28a745;border-radius:4px;color:#155724"><strong>✅ Données ' + mode + ' avec succès !</strong><br>N\'oubliez pas de cliquer sur "Enregistrer" pour sauvegarder.</div>');
         
-        // Scroll vers les champs
+        // Scroll vers le premier champ modifié
         $('html, body').animate({
             scrollTop: $('[name="client_raison_sociale"]').offset().top - 100
         }, 500);

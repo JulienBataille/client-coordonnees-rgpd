@@ -139,19 +139,27 @@ class CCRGPD_Shortcodes
 
     public static function rgpd_cookies()
     {
-        $out = '<ul>';
-        $out .= '<li><strong>Google Analytics</strong> : _ga, _gid, _gat — Mesure d\'audience (durée : 13 mois maximum)</li>';
-        $out .= '<li><strong>WordPress</strong> : wordpress_*, wp-settings-* — Gestion de session utilisateur (durée : session)</li>';
-        $out .= '</ul>';
+        $out = '';
         
-        // Intégration WP Consent API
-        if (function_exists('wp_has_consent')) {
+        // Utiliser le shortcode WP Consent si disponible
+        if (shortcode_exists('wpconsent_cookie_policy')) {
+            $out .= do_shortcode('[wpconsent_cookie_policy]');
+        } else {
+            // Fallback si WP Consent n'est pas installé
+            $out .= '<ul>';
+            $out .= '<li><strong>Google Analytics</strong> : _ga, _gid, _gat — Mesure d\'audience (durée : 13 mois maximum)</li>';
+            $out .= '<li><strong>WordPress</strong> : wordpress_*, wp-settings-* — Gestion de session utilisateur (durée : session)</li>';
+            $out .= '</ul>';
+        }
+        
+        // Bouton pour gérer les préférences
+        if (function_exists('wp_has_consent') || shortcode_exists('wpconsent_cookie_policy')) {
             $out .= '<p>' . self::t('cookies_manage_text') . '</p>';
             $out .= '<p><button type="button" class="wp-consent-api-toggle button" style="cursor:pointer" onclick="';
-            $out .= 'if(typeof cmplz_open_popup === \'function\'){cmplz_open_popup();}';
+            $out .= 'if(typeof wpconsent !== \'undefined\' && wpconsent.openSettings){wpconsent.openSettings();}';
+            $out .= 'else if(typeof cmplz_open_popup === \'function\'){cmplz_open_popup();}';
             $out .= 'else if(typeof Cookiebot === \'object\'){Cookiebot.renew();}';
             $out .= 'else if(typeof __tcfapi === \'function\'){__tcfapi(\'displayConsentUi\',2,function(){});}';
-            $out .= 'else if(typeof wp_consent_api_show_banner === \'function\'){wp_consent_api_show_banner();}';
             $out .= 'else{alert(\'Gestionnaire de cookies non disponible\');}';
             $out .= '">' . self::t('cookies_manage_button') . '</button></p>';
         }
@@ -322,14 +330,49 @@ class CCRGPD_Shortcodes
         
         foreach ($all as $form) {
             $fields = [];
-            foreach ($form->settings['wrappers'] ?? [] as $w) {
-                foreach ($w['fields'] ?? [] as $f) {
-                    $type = $f['type'] ?? 'text';
+            
+            // Méthode 1: Via Forminator_API::get_form_fields (recommandée)
+            if (method_exists('Forminator_API', 'get_form_fields')) {
+                $form_fields = Forminator_API::get_form_fields($form->id);
+                if (!empty($form_fields) && !is_wp_error($form_fields)) {
+                    foreach ($form_fields as $f) {
+                        $type = $f['type'] ?? ($f->type ?? 'text');
+                        if (!in_array($type, $fields)) $fields[] = $type;
+                    }
+                }
+            }
+            
+            // Méthode 2: Via $form->fields (Forminator récent)
+            if (empty($fields) && !empty($form->fields)) {
+                foreach ($form->fields as $f) {
+                    $type = is_array($f) ? ($f['type'] ?? 'text') : ($f->type ?? 'text');
                     if (!in_array($type, $fields)) $fields[] = $type;
                 }
             }
+            
+            // Méthode 3: Via wrappers (ancienne structure)
+            if (empty($fields) && !empty($form->settings['wrappers'])) {
+                foreach ($form->settings['wrappers'] as $w) {
+                    foreach ($w['fields'] ?? [] as $f) {
+                        $type = $f['type'] ?? 'text';
+                        if (!in_array($type, $fields)) $fields[] = $type;
+                    }
+                }
+            }
+            
+            // Méthode 4: Charger le modèle complet
+            if (empty($fields) && class_exists('Forminator_Base_Form_Model')) {
+                $model = Forminator_Base_Form_Model::get_model($form->id);
+                if ($model && !empty($model->fields)) {
+                    foreach ($model->fields as $f) {
+                        $type = is_array($f) ? ($f['type'] ?? 'text') : ($f->type ?? 'text');
+                        if (!in_array($type, $fields)) $fields[] = $type;
+                    }
+                }
+            }
+            
             $forms[$form->id] = [
-                'name' => $form->settings['formName'] ?? 'Formulaire #' . $form->id,
+                'name' => $form->settings['formName'] ?? ($form->name ?? 'Formulaire #' . $form->id),
                 'fields' => $fields
             ];
         }

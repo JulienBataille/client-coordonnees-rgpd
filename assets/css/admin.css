@@ -1,6 +1,5 @@
 /* Coordonnées & RGPD - Admin Styles */
 
-/* Boxes */
 .ccrgpd-box {
     background: #fff;
     padding: 20px 25px;
@@ -15,64 +14,47 @@
     border-bottom: 1px solid #eee;
     font-size: 1.3em;
 }
-.ccrgpd-box .description {
-    color: #646970;
-    font-style: italic;
-}
 
-/* Tabs */
-.tab-content {
-    display: none;
-}
-.tab-content.active {
-    display: block;
-}
+/* Onglets */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
 
-/* SIRET Search */
+/* Recherche SIRET */
 .siret-search {
-    background: #f0f6fc;
+    background: linear-gradient(135deg, #f0f6fc 0%, #e8f4fd 100%);
     border: 1px solid #2271b1;
-    border-radius: 4px;
+    border-radius: 6px;
     padding: 20px;
     display: flex;
-    gap: 10px;
+    gap: 12px;
     align-items: center;
     flex-wrap: wrap;
 }
 .siret-search input[type="text"] {
     font-size: 16px;
-    padding: 8px 12px;
-    width: 250px;
+    padding: 10px 14px;
+    width: 240px;
     border: 1px solid #8c8f94;
     border-radius: 4px;
 }
-#siret-spinner {
-    display: none;
-}
-#siret-spinner.active {
-    display: inline-block;
-}
+#siret-spinner { display: none; }
+#siret-spinner.active { display: inline-block; }
 
-/* SIRET Result */
 .siret-result {
     margin-top: 20px;
     padding: 20px;
-    border-radius: 4px;
+    border-radius: 6px;
 }
 .siret-result.success {
-    background: #f0fff0;
+    background: linear-gradient(135deg, #f0fff0 0%, #e8f8e8 100%);
     border: 1px solid #00a32a;
 }
 .siret-result.error {
-    background: #fcf0f1;
+    background: #fff0f0;
     border: 1px solid #d63638;
 }
-.siret-result h4 {
-    margin: 0 0 15px;
-    font-size: 1.2em;
-}
+.siret-result h4 { margin: 0 0 15px; color: #1d2327; }
 
-/* Import Preview */
 .import-preview table {
     width: 100%;
     border-collapse: collapse;
@@ -89,25 +71,12 @@
     color: #50575e;
     background: #f9f9f9;
 }
-.status-new {
-    color: #00a32a;
-    font-size: 12px;
-    margin-left: 8px;
-}
-.status-existing {
-    color: #826200;
-    font-size: 12px;
-    margin-left: 8px;
-}
-.status-replace {
-    color: #d63638;
-    font-size: 12px;
-    margin-left: 8px;
-}
+.status-new { color: #00a32a; font-size: 12px; font-weight: 500; }
+.status-existing { color: #826200; font-size: 12px; }
+.status-replace { color: #d63638; font-size: 12px; }
 
-/* Dirigeants Choice */
 .dirigeants-choice {
-    margin: 15px 0;
+    margin: 20px 0;
     padding: 15px;
     background: #fff8e5;
     border: 1px solid #dba617;
@@ -117,49 +86,37 @@
     display: block;
     margin: 8px 0;
     cursor: pointer;
-    padding: 5px 0;
-}
-.dirigeants-choice label:hover {
-    background: #fff3cd;
+    padding: 8px 12px;
+    border-radius: 4px;
 }
 
-/* Capital Input */
 .capital-input {
-    margin-top: 15px;
+    margin-top: 20px;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.import-options {
+    margin: 20px 0;
     padding: 15px;
     background: #f6f7f7;
     border-radius: 4px;
 }
-.capital-input a {
-    text-decoration: none;
-}
 
-/* Import Options */
-.import-options {
-    margin: 20px 0;
-    padding: 15px;
-    background: #f0f0f1;
-    border-radius: 4px;
-}
-.import-options .description {
-    margin-top: 5px;
-    font-size: 12px;
-}
-
-/* SIRET Actions */
 .siret-actions {
     margin-top: 20px;
     display: flex;
     gap: 10px;
 }
 
-/* RGPD Forms */
+/* Formulaires RGPD */
 .rgpd-form {
-    border: 1px solid #dcdcde;
-    border-radius: 4px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
     margin-bottom: 15px;
     background: #fafafa;
-    transition: all 0.2s ease;
 }
 .rgpd-form.enabled {
     border-color: #2271b1;
@@ -170,61 +127,42 @@
     display: flex;
     align-items: center;
     gap: 15px;
-    padding: 15px;
+    padding: 15px 20px;
     background: #f6f7f7;
     cursor: pointer;
-    border-radius: 4px 4px 0 0;
 }
-.rgpd-form.enabled .rgpd-form-header {
-    background: #f0f6fc;
-}
-.rgpd-form-title {
-    flex: 1;
-}
-.rgpd-form-title strong {
-    font-size: 14px;
-    display: block;
-}
+.rgpd-form.enabled .rgpd-form-header { background: #f0f6fc; }
+.rgpd-form-title { flex: 1; }
+.rgpd-form-title strong { font-size: 14px; display: block; }
 .rgpd-form-title .meta {
     display: block;
-    font-size: 11px;
-    color: #646970;
+    font-size: 12px;
+    color: #666;
     margin-top: 4px;
 }
 .rgpd-form-body {
     padding: 20px;
     display: none;
-    border-top: 1px solid #dcdcde;
+    border-top: 1px solid #ddd;
 }
-.rgpd-form.open .rgpd-form-body {
-    display: block;
-}
-.rgpd-form .detected {
-    background: #fff8e5;
+.rgpd-form.open .rgpd-form-body { display: block; }
+.detected {
+    background: #fff3cd;
     padding: 12px 15px;
     border-radius: 4px;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
     font-size: 13px;
-    border-left: 4px solid #dba617;
-}
-.rgpd-config {
-    width: 100%;
+    border: 1px solid #ffc107;
 }
 .rgpd-config th {
     width: 150px;
-    padding: 10px 15px 10px 0;
+    padding: 10px 12px 10px 0;
     text-align: left;
     vertical-align: top;
-    font-weight: 600;
 }
-.rgpd-config td {
-    padding: 8px 0;
-}
+.rgpd-config td { padding: 10px 0; }
 .rgpd-config input[type="text"],
-.rgpd-config select {
-    width: 100%;
-    max-width: 400px;
-}
+.rgpd-config select { width: 100%; max-width: 400px; }
 
 /* Toggle Switch */
 .toggle {
@@ -234,20 +172,13 @@
     display: inline-block;
     flex-shrink: 0;
 }
-.toggle input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
+.toggle input { opacity: 0; width: 0; height: 0; }
 .toggle .slider {
     position: absolute;
     cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     background: #ccc;
-    transition: 0.3s;
+    transition: .3s;
     border-radius: 26px;
 }
 .toggle .slider:before {
@@ -258,47 +189,26 @@
     left: 3px;
     bottom: 3px;
     background: #fff;
-    transition: 0.3s;
+    transition: .3s;
     border-radius: 50%;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
-.toggle input:checked + .slider {
-    background: #2271b1;
-}
-.toggle input:checked + .slider:before {
-    transform: translateX(24px);
-}
+.toggle input:checked + .slider { background: #2271b1; }
+.toggle input:checked + .slider:before { transform: translateX(24px); }
 
-/* Shortcodes List */
+/* Liste des shortcodes */
 .shortcode-list {
     background: #f9f9f9;
     padding: 20px 25px;
     border-left: 4px solid #2271b1;
-    border-radius: 0 4px 4px 0;
 }
-.shortcode-list h3 {
-    margin: 25px 0 15px;
-    color: #1d2327;
-    font-size: 1.1em;
-}
-.shortcode-list h3:first-child {
-    margin-top: 0;
-}
-.shortcode-list p {
-    margin: 8px 0;
-    line-height: 1.8;
-}
+.shortcode-list h3 { margin: 25px 0 15px; font-size: 1.1em; }
+.shortcode-list h3:first-child { margin-top: 0; }
+.shortcode-list p { margin: 10px 0; }
 .shortcode-list code {
     background: #fff;
-    padding: 3px 8px;
-    border: 1px solid #dcdcde;
+    padding: 4px 8px;
+    border: 1px solid #ddd;
     border-radius: 3px;
-    font-family: Consolas, Monaco, monospace;
     font-size: 13px;
-    color: #2271b1;
-}
-
-/* Submit buttons visibility */
-#submit-main {
-    margin-top: 20px;
 }
