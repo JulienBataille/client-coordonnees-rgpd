@@ -3,7 +3,7 @@
  * Plugin Name: Coordonnées & RGPD - By MATRYS
  * Plugin URI: https://github.com/JulienBataille/client-coordonnees-rgpd
  * Description: Coordonnées client/agence + mentions légales et politique de confidentialité conformes LCEN/RGPD avec traduction multi-langues.
- * Version: 3.5.1
+ * Version: 3.6.0
  * Author: MATRYS - Julien Bataillé
  * Author URI: https://matrys.fr
  * Text Domain: client-coordonnees
@@ -19,10 +19,42 @@ require_once plugin_dir_path(__FILE__) . 'includes/class-matrys-github-updater.p
 if (class_exists('MATRYS_GitHub_Updater')) {
     new MATRYS_GitHub_Updater(
         __FILE__,
-        'JulienBataille',              // GitHub user/org
-        'client-coordonnees-rgpd'     // GitHub repo
-        // Pour repo privé : defined('MATRYS_GH_TOKEN') ? MATRYS_GH_TOKEN : null
+        'JulienBataille',
+        'client-coordonnees-rgpd'
     );
+}
+
+// === Suppression des anciennes versions ===
+register_activation_hook(__FILE__, 'ccrp_supprimer_ancienne_version');
+function ccrp_supprimer_ancienne_version() {
+    $anciens_plugins = [
+        'client_coordonnees_v3/client_coordonnees.php',
+        'client_coordonnees/client_coordonnees.php',
+        'client-coordonnees/client_coordonnees.php',
+    ];
+    
+    include_once(ABSPATH . 'wp-admin/includes/plugin.php');
+    
+    foreach ($anciens_plugins as $plugin) {
+        if (file_exists(WP_PLUGIN_DIR . '/' . $plugin)) {
+            if (is_plugin_active($plugin)) {
+                deactivate_plugins($plugin);
+            }
+            
+            $plugin_dir = WP_PLUGIN_DIR . '/' . dirname($plugin);
+            if (is_dir($plugin_dir)) {
+                require_once(ABSPATH . 'wp-admin/includes/file.php');
+                WP_Filesystem();
+                global $wp_filesystem;
+                $wp_filesystem->delete($plugin_dir, true);
+            }
+        }
+    }
+}
+
+// Évite le conflit si chargé deux fois
+if (class_exists('Client_Coordonnees_RGPD_Plugin')) {
+    return;
 }
 
 class Client_Coordonnees_RGPD_Plugin
