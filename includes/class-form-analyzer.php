@@ -19,7 +19,7 @@ class CCRGPD_Form_Analyzer
         ],
         'entreprise' => [
             'label' => 'Données professionnelles',
-            'keywords' => ['societe', 'société', 'entreprise', 'company', 'siret', 'siren', 'tva', 'fonction', 'poste', 'job', 'service', 'departement', 'professionnel', 'professionnelle', 'pro', 'employeur'],
+            'keywords' => ['societe', 'société', 'entreprise', 'company', 'siret', 'siren', 'tva', 'fonction', 'poste', 'job', 'service', 'departement', 'professionnel', 'professionnelle', 'employeur'],
             'icon' => '🏢',
         ],
         'naissance' => [
@@ -57,6 +57,8 @@ class CCRGPD_Form_Analyzer
         'hidden', 'honeypot', 'page', 'url', 'site',
         // Données de connexion (anonymes ou hashées)
         'mot de passe', 'password', 'login', 'identifiant', 'username', 'pseudo', 'utilisateur',
+        // Contenu contextuel
+        'projet', 'titre',
     ];
 
     /**
@@ -285,7 +287,6 @@ class CCRGPD_Form_Analyzer
         
         // Mots-clés pour regrouper
         $addressKeywords = ['adresse', 'ville', 'city', 'code postal', 'cp', 'zip', 'pays', 'country', 'rue', 'street', 'postale'];
-        // Note: pas 'nom' seul car ça match 'nom d'utilisateur'
         $nameKeywords = ['prénom', 'prenom', 'nom de famille', 'firstname', 'lastname'];
         
         foreach ($fields as $field) {
@@ -309,12 +310,22 @@ class CCRGPD_Form_Analyzer
             
             // Vérifier si c'est un champ nom/prénom
             $isName = false;
-            foreach ($nameKeywords as $kw) {
-                if (strpos($lower, $kw) !== false) {
-                    $isName = true;
-                    break;
+            
+            // Cas spécial : "nom" exactement (mais pas "nom d'utilisateur", "nom de société", etc.)
+            if ($lower === 'nom') {
+                $isName = true;
+            }
+            
+            // Sinon vérifier les autres keywords
+            if (!$isName) {
+                foreach ($nameKeywords as $kw) {
+                    if (strpos($lower, $kw) !== false) {
+                        $isName = true;
+                        break;
+                    }
                 }
             }
+            
             if ($isName) {
                 if (!$hasName) {
                     $simplified[] = 'nom et prénom';
