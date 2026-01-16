@@ -172,7 +172,13 @@ jQuery(document).ready(function($) {
         
         var overwrite = $('#import_overwrite').is(':checked');
         var dirIdx = $('input[name=sel_dirigeant]:checked').val() || 0;
-        var dirigeant = d.dirigeants && d.dirigeants[dirIdx] ? d.dirigeants[dirIdx].full_name : '';
+        var dirigeant = '';
+        if (d.dirigeants && d.dirigeants[dirIdx]) {
+            dirigeant = d.dirigeants[dirIdx].full_name;
+            if (d.dirigeants[dirIdx].qualite) {
+                dirigeant += ' (' + d.dirigeants[dirIdx].qualite + ')';
+            }
+        }
         var capital = $('#import_capital').val();
         
         // Fonction pour remplir un champ
