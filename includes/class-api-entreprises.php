@@ -9,7 +9,7 @@ class CCRGPD_API_Entreprises
     {
         $siret = preg_replace('/[^0-9]/', '', $siret);
         if (strlen($siret) < 9) {
-            return new WP_Error('invalid', 'SIRET invalide (min 9 chiffres)');
+            return new WP_Error('invalid', 'SIRET invalide (minimum 9 chiffres)');
         }
 
         $siren = substr($siret, 0, 9);
@@ -24,7 +24,7 @@ class CCRGPD_API_Entreprises
 
         $data = json_decode(wp_remote_retrieve_body($response), true);
         if (empty($data['results'])) {
-            return new WP_Error('not_found', 'Aucune entreprise trouvée');
+            return new WP_Error('not_found', 'Aucune entreprise trouvée pour ce numéro');
         }
 
         return self::format($data['results'][0]);
