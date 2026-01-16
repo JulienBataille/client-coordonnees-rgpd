@@ -84,7 +84,7 @@ class CCRGPD_Shortcodes
     public static function rgpd_mentions($atts = [])
     {
         $rgpd = get_option('rgpd_settings', []);
-        $forms = self::get_forms();
+        $forms = self::get_all_forms();
         $out = '';
 
         foreach ($forms as $id => $f) {
@@ -229,7 +229,7 @@ class CCRGPD_Shortcodes
         $n = get_option('client_raison_sociale') ?: get_bloginfo('name');
         $u = home_url();
         $rgpd = get_option('rgpd_settings', []);
-        $forms = self::get_forms();
+        $forms = self::get_all_forms();
         
         // Vérifier s'il y a des formulaires activés
         $has_forms = false;
@@ -331,11 +331,72 @@ class CCRGPD_Shortcodes
                 }
             }
             
-            $forms[$form->id] = [
+            $forms['forminator_' . $form->id] = [
                 'name' => $form->settings['formName'] ?? ($form->name ?? 'Formulaire #' . $form->id),
-                'fields' => $fields
+                'fields' => $fields,
+                'plugin' => 'Forminator'
             ];
         }
         return $forms;
+    }
+    
+    /**
+     * Récupère les formulaires SureForms
+     */
+    public static function get_sureforms()
+    {
+        // Vérifier si SureForms est installé
+        if (!post_type_exists('sureforms_form')) return [];
+        
+        $forms = [];
+        $all = get_posts([
+            'post_type' => 'sureforms_form',
+            'post_status' => 'publish',
+            'numberposts' => 100,
+        ]);
+        
+        if (empty($all)) return [];
+        
+        foreach ($all as $form) {
+            // Récupérer les blocs du formulaire pour identifier les types de champs
+            $fields = [];
+            $blocks = parse_blocks($form->post_content);
+            
+            foreach ($blocks as $block) {
+                if (strpos($block['blockName'] ?? '', 'srfm/') === 0) {
+                    // Extraire le type de champ depuis le nom du bloc (ex: srfm/email -> email)
+                    $type = str_replace('srfm/', '', $block['blockName']);
+                    if ($type && !in_array($type, $fields)) {
+                        $fields[] = $type;
+                    }
+                }
+                // Parcourir les blocs internes aussi
+                if (!empty($block['innerBlocks'])) {
+                    foreach ($block['innerBlocks'] as $inner) {
+                        if (strpos($inner['blockName'] ?? '', 'srfm/') === 0) {
+                            $type = str_replace('srfm/', '', $inner['blockName']);
+                            if ($type && !in_array($type, $fields)) {
+                                $fields[] = $type;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            $forms['sureforms_' . $form->ID] = [
+                'name' => $form->post_title ?: 'Formulaire #' . $form->ID,
+                'fields' => $fields,
+                'plugin' => 'SureForms'
+            ];
+        }
+        return $forms;
+    }
+    
+    /**
+     * Récupère tous les formulaires (Forminator + SureForms)
+     */
+    public static function get_all_forms()
+    {
+        return array_merge(self::get_forms(), self::get_sureforms());
     }
 }

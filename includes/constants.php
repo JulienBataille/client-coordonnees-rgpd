@@ -76,6 +76,7 @@ class CCRGPD_Constants
     ];
 
     public const FIELD_TYPES = [
+        // Forminator
         'name' => 'Nom, prénom',
         'email' => 'Adresse email',
         'phone' => 'Numéro de téléphone',
@@ -92,6 +93,15 @@ class CCRGPD_Constants
         'stripe' => 'Données de paiement',
         'paypal' => 'Données de paiement',
         'signature' => 'Signature électronique',
+        // SureForms
+        'input' => 'Texte libre',
+        'multi-choice' => 'Choix multiples',
+        'dropdown' => 'Liste déroulante',
+        'gdpr' => 'Consentement RGPD',
+        'url' => 'URL / Lien',
+        'file-upload' => 'Fichiers téléchargés',
+        'rating' => 'Évaluation',
+        'range-slider' => 'Curseur de valeur',
     ];
 
     public const RETENTION = [

@@ -106,7 +106,9 @@ class CCRGPD_Admin
     public static function render_page()
     {
         $rgpd = get_option('rgpd_settings', []);
-        $forms = CCRGPD_Shortcodes::get_forms();
+        $forms = CCRGPD_Shortcodes::get_all_forms();
+        $has_forminator = class_exists('Forminator_API');
+        $has_sureforms = post_type_exists('sureforms_form');
         ?>
         <div class="wrap">
             <h1><span class="dashicons dashicons-id"></span> Coordonnées & RGPD</h1>
@@ -274,26 +276,44 @@ class CCRGPD_Admin
                     <?php settings_fields(CCRGPD_Constants::OPTION_GROUP_RGPD); ?>
                     <div class="ccrgpd-box">
                         <h2>Configuration RGPD des formulaires</h2>
-                        <p class="description">Activez et configurez chaque formulaire Forminator pour la politique de confidentialité.</p>
+                        <p class="description">Activez et configurez chaque formulaire pour la politique de confidentialité.</p>
                         
-                        <?php if (empty($forms)) : ?>
+                        <?php if (!$has_forminator && !$has_sureforms) : ?>
+                            <div class="notice notice-info inline">
+                                <p>ℹ️ Aucun plugin de formulaire compatible détecté.</p>
+                                <p>
+                                    <a href="<?php echo admin_url('plugin-install.php?s=forminator&tab=search&type=term'); ?>">Installer Forminator</a> ou 
+                                    <a href="<?php echo admin_url('plugin-install.php?s=sureforms&tab=search&type=term'); ?>">Installer SureForms</a>
+                                </p>
+                            </div>
+                        <?php elseif (empty($forms)) : ?>
                             <div class="notice notice-warning inline">
-                                <p>⚠️ Aucun formulaire Forminator détecté. <a href="<?php echo admin_url('admin.php?page=forminator-cform'); ?>">Créer un formulaire</a></p>
+                                <p>⚠️ Aucun formulaire détecté.</p>
+                                <p>
+                                    <?php if ($has_forminator) : ?>
+                                        <a href="<?php echo admin_url('admin.php?page=forminator-cform'); ?>">Créer un formulaire Forminator</a>
+                                    <?php endif; ?>
+                                    <?php if ($has_forminator && $has_sureforms) echo ' ou '; ?>
+                                    <?php if ($has_sureforms) : ?>
+                                        <a href="<?php echo admin_url('admin.php?page=sureforms_menu'); ?>">Créer un formulaire SureForms</a>
+                                    <?php endif; ?>
+                                </p>
                             </div>
                         <?php else : ?>
                             <?php foreach ($forms as $id => $form) : 
                                 $config = $rgpd['forms'][$id] ?? [];
                                 $enabled = !empty($config['enabled']);
+                                $plugin_badge = isset($form['plugin']) ? '<span class="plugin-badge plugin-' . strtolower($form['plugin']) . '">' . esc_html($form['plugin']) . '</span>' : '';
                             ?>
                             <div class="rgpd-form <?php echo $enabled ? 'enabled' : ''; ?>">
                                 <div class="rgpd-form-header">
                                     <label class="toggle">
-                                        <input type="checkbox" name="rgpd_settings[forms][<?php echo $id; ?>][enabled]" value="1" <?php checked($enabled); ?>>
+                                        <input type="checkbox" name="rgpd_settings[forms][<?php echo esc_attr($id); ?>][enabled]" value="1" <?php checked($enabled); ?>>
                                         <span class="slider"></span>
                                     </label>
                                     <div class="rgpd-form-title">
-                                        <strong><?php echo esc_html($form['name']); ?></strong>
-                                        <span class="meta">ID: <?php echo $id; ?> • <?php echo count($form['fields']); ?> champs</span>
+                                        <strong><?php echo esc_html($form['name']); ?></strong> <?php echo $plugin_badge; ?>
+                                        <span class="meta"><?php echo count($form['fields']); ?> champs</span>
                                     </div>
                                     <span class="dashicons dashicons-arrow-down-alt2"></span>
                                 </div>
