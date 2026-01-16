@@ -4,6 +4,9 @@ defined('ABSPATH') || exit;
 class CCRGPD_API_Entreprises
 {
     private const API_URL = 'https://recherche-entreprises.api.gouv.fr/search';
+    
+    // Codes nature juridique des associations et fondations (pas de RCS)
+    private const ASSOCIATIONS = ['9210', '9220', '9221', '9222', '9223', '9224', '9230', '9240', '9260', '9300'];
 
     public static function search($siret)
     {
@@ -35,15 +38,20 @@ class CCRGPD_API_Entreprises
         $siege = $e['siege'] ?? [];
         $siren = $e['siren'] ?? '';
         $cp = $siege['code_postal'] ?? '';
+        $nature = $e['nature_juridique'] ?? '';
+        
+        // Détecter si c'est une association (pas de RCS, TVA généralement non applicable)
+        $is_association = in_array($nature, self::ASSOCIATIONS) || substr($nature, 0, 2) === '92';
 
         $result = [
             'raison_sociale' => $e['nom_raison_sociale'] ?? '',
             'adresse_siege' => $siege['adresse'] ?? '',
             'siret' => $siege['siret'] ?? '',
             'siren' => $siren,
-            'forme_juridique' => CCRGPD_Constants::NATURE_JURIDIQUE[$e['nature_juridique'] ?? ''] ?? 'Autre',
-            'tva' => self::calc_tva($siren),
-            'rcs' => self::format_rcs($siren, $cp),
+            'forme_juridique' => CCRGPD_Constants::NATURE_JURIDIQUE[$nature] ?? 'Autre',
+            'tva' => $is_association ? '' : self::calc_tva($siren),  // Pas de TVA par défaut pour les associations
+            'rcs' => $is_association ? '' : self::format_rcs($siren, $cp),  // Pas de RCS pour les associations
+            'is_association' => $is_association,
             'dirigeants' => [],
             'annuaire_url' => 'https://annuaire-entreprises.data.gouv.fr/entreprise/' . $siren,
         ];

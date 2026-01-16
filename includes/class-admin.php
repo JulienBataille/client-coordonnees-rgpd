@@ -166,7 +166,7 @@ class CCRGPD_Admin
                         <h2>🔍 Recherche automatique par SIRET</h2>
                         <p class="description">Remplissez automatiquement les informations légales via l'API Recherche d'Entreprises (data.gouv.fr)</p>
                         <div class="siret-search">
-                            <input type="text" id="siret_search" placeholder="Ex: 98562012900017" maxlength="20">
+                            <input type="text" id="siret_search" placeholder="Ex: 123 456 789 00012" maxlength="20">
                             <button type="button" id="btn-search-siret" class="button button-secondary">🔍 Rechercher</button>
                             <span class="spinner" id="siret-spinner"></span>
                         </div>

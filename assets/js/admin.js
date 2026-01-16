@@ -124,24 +124,40 @@ jQuery(document).ready(function($) {
                     }
                     html += '</table></div>';
                     
-                    // Choix du dirigeant
-                    if (d.dirigeants && d.dirigeants.length > 0) {
+                    // Message spécifique pour les associations
+                    if (d.is_association) {
+                        html += '<div class="notice notice-info inline" style="margin:15px 0;padding:10px 15px">';
+                        html += '<strong>🏛️ Association détectée</strong><br>';
+                        html += '• Pas de RCS (non inscrite au registre du commerce)<br>';
+                        html += '• TVA généralement non applicable (à remplir manuellement si assujettie)<br>';
+                        html += '• Dirigeants à renseigner manuellement (Président, Trésorier, etc.)';
+                        html += '</div>';
+                        
+                        // Champ manuel pour le responsable de publication
                         html += '<div class="dirigeants-choice">';
-                        html += '<strong>👤 Choisir le responsable de publication :</strong>';
-                        for (var j = 0; j < d.dirigeants.length; j++) {
-                            var checked = j === 0 ? ' checked' : '';
-                            html += '<label><input type="radio" name="sel_dirigeant" value="' + j + '"' + checked + '> ';
-                            html += d.dirigeants[j].full_name + ' — <em>' + d.dirigeants[j].qualite + '</em></label>';
+                        html += '<strong>👤 Responsable de publication :</strong><br>';
+                        html += '<label>Nom et fonction : <input type="text" id="import_responsable" value="' + (currentValues.client_responsable || '') + '" placeholder="Ex: Jean DUPONT (Président)" style="width:300px"></label>';
+                        html += '</div>';
+                    } else {
+                        // Choix du dirigeant (entreprises)
+                        if (d.dirigeants && d.dirigeants.length > 0) {
+                            html += '<div class="dirigeants-choice">';
+                            html += '<strong>👤 Choisir le responsable de publication :</strong>';
+                            for (var j = 0; j < d.dirigeants.length; j++) {
+                                var checked = j === 0 ? ' checked' : '';
+                                html += '<label><input type="radio" name="sel_dirigeant" value="' + j + '"' + checked + '> ';
+                                html += d.dirigeants[j].full_name + ' — <em>' + d.dirigeants[j].qualite + '</em></label>';
+                            }
+                            html += '</div>';
                         }
+                        
+                        // Capital (non dispo via API) - seulement pour les entreprises
+                        html += '<div class="capital-input">';
+                        html += '<strong>💰 Capital social</strong> <small>(non disponible via l\'API)</small><br>';
+                        html += '<a href="' + d.annuaire_url + '" target="_blank" rel="noopener">👉 Consulter sur Annuaire Entreprises</a><br><br>';
+                        html += '<label>Capital : <input type="text" id="import_capital" value="' + (currentValues.client_capital || '') + '" placeholder="Ex: 10 000 €" style="width:180px"></label>';
                         html += '</div>';
                     }
-                    
-                    // Capital (non dispo via API)
-                    html += '<div class="capital-input">';
-                    html += '<strong>💰 Capital social</strong> <small>(non disponible via l\'API)</small><br>';
-                    html += '<a href="' + d.annuaire_url + '" target="_blank" rel="noopener">👉 Consulter sur Annuaire Entreprises</a><br><br>';
-                    html += '<label>Capital : <input type="text" id="import_capital" value="' + (currentValues.client_capital || '') + '" placeholder="Ex: 10 000 €" style="width:180px"></label>';
-                    html += '</div>';
                     
                     // Options d'import
                     html += '<div class="import-options">';
@@ -171,15 +187,24 @@ jQuery(document).ready(function($) {
         if (!d) return;
         
         var overwrite = $('#import_overwrite').is(':checked');
-        var dirIdx = $('input[name=sel_dirigeant]:checked').val() || 0;
         var dirigeant = '';
-        if (d.dirigeants && d.dirigeants[dirIdx]) {
-            dirigeant = d.dirigeants[dirIdx].full_name;
-            if (d.dirigeants[dirIdx].qualite) {
-                dirigeant += ' (' + d.dirigeants[dirIdx].qualite + ')';
+        var capital = '';
+        
+        // Gestion différente pour les associations
+        if (d.is_association) {
+            // Association : utiliser le champ manuel
+            dirigeant = $('#import_responsable').val() || '';
+        } else {
+            // Entreprise : utiliser la sélection de dirigeant
+            var dirIdx = $('input[name=sel_dirigeant]:checked').val() || 0;
+            if (d.dirigeants && d.dirigeants[dirIdx]) {
+                dirigeant = d.dirigeants[dirIdx].full_name;
+                if (d.dirigeants[dirIdx].qualite) {
+                    dirigeant += ' (' + d.dirigeants[dirIdx].qualite + ')';
+                }
             }
+            capital = $('#import_capital').val();
         }
-        var capital = $('#import_capital').val();
         
         // Fonction pour remplir un champ
         function setField(name, value) {
