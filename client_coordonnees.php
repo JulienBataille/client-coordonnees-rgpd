@@ -3,7 +3,7 @@
  * Plugin Name: Coordonnées & RGPD - By MATRYS
  * Plugin URI: https://github.com/JulienBataille/client-coordonnees-rgpd
  * Description: Coordonnées client/agence + mentions légales et politique de confidentialité conformes LCEN/RGPD avec traduction multi-langues.
- * Version: 3.6.2
+ * Version: 3.6.3
  * Author: MATRYS - Julien Bataillé
  * Author URI: https://matrys.fr
  * Text Domain: client-coordonnees
@@ -338,7 +338,7 @@ class Client_Coordonnees_RGPD_Plugin
         add_shortcode('client_email', [$this, 'shortcode_client_email']);
         add_shortcode('client_tel', [$this, 'shortcode_client_tel']);
         add_shortcode('client_address', [$this, 'shortcode_client_address']);
-        add_shortcode('client_address_etablissement', [$this, 'shortcode_client_address_etablissement']);
+        add_shortcode('client_address_siege', [$this, 'shortcode_client_address_siege']);
         add_shortcode('site_title', [$this, 'shortcode_site_title']);
         add_shortcode('site_link', [$this, 'shortcode_site_link']);
         add_shortcode('matrys_block', [$this, 'shortcode_matrys_block']);
@@ -583,8 +583,8 @@ class Client_Coordonnees_RGPD_Plugin
                 <div class="coordonnees-wrap shortcode-list">
                     <h2>📍 Coordonnées</h2>
                     <p><code>[site_title]</code> <code>[site_link]</code> <code>[client_email]</code> <code>[client_tel]</code> <code>[matrys_block]</code></p>
-                    <p><code>[client_address]</code> → Adresse siège social (mentions légales)</p>
-                    <p><code>[client_address_etablissement]</code> → Adresse établissement (footer/contact) - fallback sur siège social si vide</p>
+                    <p><code>[client_address]</code> → Adresse établissement (footer/contact) - fallback sur siège si vide</p>
+                    <p><code>[client_address_siege]</code> → Adresse siège social (mentions légales)</p>
                 </div>
                 <div class="coordonnees-wrap shortcode-list" style="border-left-color:#46b450;">
                     <h2>🛡️ RGPD</h2>
@@ -635,10 +635,18 @@ class Client_Coordonnees_RGPD_Plugin
     
     public function shortcode_client_email() { $e = get_option('client_email'); return $e ? '<a href="mailto:'.esc_attr($e).'">'.esc_html($e).'</a>' : ''; }
     public function shortcode_client_tel() { $t = get_option('client_tel'); return $t ? '<a href="tel:'.$this->phone_href($t, get_option('client_country','FR')).'">'.esc_html($t).'</a>' : ''; }
-    public function shortcode_client_address($a) { $ad = get_option('client_address'); if (!$ad) return ''; $a = shortcode_atts(['link'=>'yes'], $a); $h = nl2br(esc_html($ad)); return $a['link']==='yes' ? '<a href="https://www.google.com/maps?q='.urlencode($ad).'" target="_blank">'.$h.'</a>' : $h; }
-    public function shortcode_client_address_etablissement($a) { 
+    public function shortcode_client_address($a) { 
+        // Priorité à l'adresse établissement, sinon siège social
         $ad = get_option('client_address_etablissement'); 
-        if (!$ad) $ad = get_option('client_address'); // Fallback sur siège social
+        if (!$ad) $ad = get_option('client_address');
+        if (!$ad) return ''; 
+        $a = shortcode_atts(['link'=>'yes'], $a); 
+        $h = nl2br(esc_html($ad)); 
+        return $a['link']==='yes' ? '<a href="https://www.google.com/maps?q='.urlencode($ad).'" target="_blank">'.$h.'</a>' : $h; 
+    }
+    public function shortcode_client_address_siege($a) { 
+        // Toujours l'adresse siège social (pour mentions légales)
+        $ad = get_option('client_address'); 
         if (!$ad) return ''; 
         $a = shortcode_atts(['link'=>'yes'], $a); 
         $h = nl2br(esc_html($ad)); 
