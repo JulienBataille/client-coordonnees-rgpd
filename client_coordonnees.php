@@ -3,7 +3,7 @@
  * Plugin Name: Coordonnées & RGPD - By MATRYS
  * Plugin URI: https://github.com/JulienBataille/client-coordonnees-rgpd
  * Description: Coordonnées client/agence + mentions légales et politique de confidentialité conformes LCEN/RGPD avec traduction multi-langues.
- * Version: 3.5.0
+ * Version: 3.5.1
  * Author: MATRYS - Julien Bataillé
  * Author URI: https://matrys.fr
  * Text Domain: client-coordonnees
