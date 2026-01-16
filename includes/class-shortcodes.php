@@ -331,42 +331,13 @@ class CCRGPD_Shortcodes
         foreach ($all as $form) {
             $fields = [];
             
-            // Méthode 1: Via Forminator_API::get_form_fields (recommandée)
-            if (method_exists('Forminator_API', 'get_form_fields')) {
-                $form_fields = Forminator_API::get_form_fields($form->id);
-                if (!empty($form_fields) && !is_wp_error($form_fields)) {
-                    foreach ($form_fields as $f) {
-                        $type = $f['type'] ?? ($f->type ?? 'text');
-                        if (!in_array($type, $fields)) $fields[] = $type;
-                    }
-                }
-            }
-            
-            // Méthode 2: Via $form->fields (Forminator récent)
-            if (empty($fields) && !empty($form->fields)) {
+            // Récupérer les champs depuis $form->fields
+            if (!empty($form->fields)) {
                 foreach ($form->fields as $f) {
-                    $type = is_array($f) ? ($f['type'] ?? 'text') : ($f->type ?? 'text');
-                    if (!in_array($type, $fields)) $fields[] = $type;
-                }
-            }
-            
-            // Méthode 3: Via wrappers (ancienne structure)
-            if (empty($fields) && !empty($form->settings['wrappers'])) {
-                foreach ($form->settings['wrappers'] as $w) {
-                    foreach ($w['fields'] ?? [] as $f) {
-                        $type = $f['type'] ?? 'text';
-                        if (!in_array($type, $fields)) $fields[] = $type;
-                    }
-                }
-            }
-            
-            // Méthode 4: Charger le modèle complet
-            if (empty($fields) && class_exists('Forminator_Base_Form_Model')) {
-                $model = Forminator_Base_Form_Model::get_model($form->id);
-                if ($model && !empty($model->fields)) {
-                    foreach ($model->fields as $f) {
-                        $type = is_array($f) ? ($f['type'] ?? 'text') : ($f->type ?? 'text');
-                        if (!in_array($type, $fields)) $fields[] = $type;
+                    // Forminator utilise des objets Forminator_Form_Field_Model
+                    $type = is_object($f) ? $f->type : (is_array($f) ? ($f['type'] ?? 'text') : 'text');
+                    if ($type && !in_array($type, $fields)) {
+                        $fields[] = $type;
                     }
                 }
             }
