@@ -3,7 +3,7 @@
  * Plugin Name: Coordonnées & RGPD - By MATRYS
  * Plugin URI: https://github.com/JulienBataille/client-coordonnees-rgpd
  * Description: Coordonnées client/agence + mentions légales et politique de confidentialité conformes LCEN/RGPD avec traduction multi-langues.
- * Version: 3.6.0
+ * Version: 3.6.1
  * Author: MATRYS - Julien Bataillé
  * Author URI: https://matrys.fr
  * Text Domain: client-coordonnees
@@ -24,32 +24,12 @@ if (class_exists('MATRYS_GitHub_Updater')) {
     );
 }
 
-// === Suppression des anciennes versions ===
-register_activation_hook(__FILE__, 'ccrp_supprimer_ancienne_version');
-function ccrp_supprimer_ancienne_version() {
-    $anciens_plugins = [
-        'client_coordonnees_v3/client_coordonnees.php',
-        'client_coordonnees/client_coordonnees.php',
-    ];
-    
-    include_once(ABSPATH . 'wp-admin/includes/plugin.php');
-    
-    foreach ($anciens_plugins as $plugin) {
-        if (file_exists(WP_PLUGIN_DIR . '/' . $plugin)) {
-            if (is_plugin_active($plugin)) {
-                deactivate_plugins($plugin);
-            }
-            
-            $plugin_dir = WP_PLUGIN_DIR . '/' . dirname($plugin);
-            if (is_dir($plugin_dir)) {
-                require_once(ABSPATH . 'wp-admin/includes/file.php');
-                WP_Filesystem();
-                global $wp_filesystem;
-                $wp_filesystem->delete($plugin_dir, true);
-            }
-        }
-    }
-}
+// Force la vérification des MAJ à l'activation
+register_activation_hook(__FILE__, function() {
+    delete_transient('matrys_ghupd_' . md5('client-coordonnees-rgpd'));
+    delete_site_transient('update_plugins');
+    wp_update_plugins();
+});
 
 class Client_Coordonnees_RGPD_Plugin
 {
