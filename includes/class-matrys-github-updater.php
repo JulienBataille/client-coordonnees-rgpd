@@ -85,7 +85,13 @@ if (!class_exists('MATRYS_GitHub_Updater')) {
                 return $transient;
             }
             
-            $this->set_plugin_properties();
+            // Récupère les infos directement (ne pas dépendre de admin_init)
+            if (empty($this->plugin) || empty($this->basename)) {
+                $this->plugin = get_plugin_data($this->file);
+                $this->basename = plugin_basename($this->file);
+                $this->active = is_plugin_active($this->basename);
+            }
+            
             $release = $this->get_github_release();
             
             if (!$release || !isset($release->tag_name)) {
