@@ -381,4 +381,129 @@ class CCRGPD_Form_Analyzer
     {
         return self::CATEGORIES;
     }
+    
+    /**
+     * Suggestions RGPD basées sur le nom du formulaire
+     */
+    private const FORM_SUGGESTIONS = [
+        'contact' => [
+            'purpose' => 'Répondre à votre demande de contact',
+            'legal_basis' => 'consent',
+            'retention' => '3years',
+        ],
+        'devis' => [
+            'purpose' => 'Établir un devis personnalisé',
+            'legal_basis' => 'consent',
+            'retention' => '3years',
+        ],
+        'candidature' => [
+            'purpose' => 'Traiter votre candidature',
+            'legal_basis' => 'consent',
+            'retention' => '2years',
+        ],
+        'recrutement' => [
+            'purpose' => 'Traiter votre candidature',
+            'legal_basis' => 'consent',
+            'retention' => '2years',
+        ],
+        'cv' => [
+            'purpose' => 'Traiter votre candidature',
+            'legal_basis' => 'consent',
+            'retention' => '2years',
+        ],
+        'emploi' => [
+            'purpose' => 'Traiter votre candidature',
+            'legal_basis' => 'consent',
+            'retention' => '2years',
+        ],
+        'newsletter' => [
+            'purpose' => 'Envoyer notre newsletter',
+            'legal_basis' => 'consent',
+            'retention' => 'unsubscribe',
+        ],
+        'inscription' => [
+            'purpose' => 'Gérer votre compte utilisateur',
+            'legal_basis' => 'consent',
+            'retention' => 'account',
+        ],
+        'compte' => [
+            'purpose' => 'Gérer votre compte utilisateur',
+            'legal_basis' => 'consent',
+            'retention' => 'account',
+        ],
+        'register' => [
+            'purpose' => 'Gérer votre compte utilisateur',
+            'legal_basis' => 'consent',
+            'retention' => 'account',
+        ],
+        'reservation' => [
+            'purpose' => 'Traiter votre réservation',
+            'legal_basis' => 'consent',
+            'retention' => '3years',
+        ],
+        'booking' => [
+            'purpose' => 'Traiter votre réservation',
+            'legal_basis' => 'consent',
+            'retention' => '3years',
+        ],
+        'commande' => [
+            'purpose' => 'Traiter votre commande',
+            'legal_basis' => 'consent',
+            'retention' => '3years',
+        ],
+        'order' => [
+            'purpose' => 'Traiter votre commande',
+            'legal_basis' => 'consent',
+            'retention' => '3years',
+        ],
+        'rappel' => [
+            'purpose' => 'Vous recontacter suite à votre demande',
+            'legal_basis' => 'consent',
+            'retention' => '3years',
+        ],
+        'callback' => [
+            'purpose' => 'Vous recontacter suite à votre demande',
+            'legal_basis' => 'consent',
+            'retention' => '3years',
+        ],
+        'avis' => [
+            'purpose' => 'Recueillir votre avis et améliorer nos services',
+            'legal_basis' => 'consent',
+            'retention' => '3years',
+        ],
+        'temoignage' => [
+            'purpose' => 'Recueillir votre témoignage',
+            'legal_basis' => 'consent',
+            'retention' => '3years',
+        ],
+        'satisfaction' => [
+            'purpose' => 'Mesurer votre satisfaction et améliorer nos services',
+            'legal_basis' => 'consent',
+            'retention' => '3years',
+        ],
+    ];
+    
+    /**
+     * Retourne les suggestions RGPD basées sur le nom du formulaire
+     * 
+     * @param string $formName Nom du formulaire
+     * @return array|null Suggestions ou null si aucune correspondance
+     */
+    public static function getSuggestions($formName)
+    {
+        $normalized = self::normalize($formName);
+        
+        foreach (self::FORM_SUGGESTIONS as $keyword => $suggestions) {
+            if (strpos($normalized, $keyword) !== false) {
+                return $suggestions;
+            }
+        }
+        
+        // Valeurs par défaut si aucune correspondance
+        return [
+            'purpose' => '',
+            'legal_basis' => 'consent',
+            'retention' => '3years',
+        ];
+    }
 }

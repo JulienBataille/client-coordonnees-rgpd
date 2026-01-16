@@ -361,6 +361,9 @@ class CCRGPD_Admin
                                         echo esc_html(implode(', ', $fieldLabels));
                                         echo '</div>';
                                     }
+                                    
+                                    // Récupérer les suggestions basées sur le nom du formulaire
+                                    $suggestions = CCRGPD_Form_Analyzer::getSuggestions($form['name']);
                                     ?>
                                     <table class="rgpd-config">
                                         <tr>
@@ -369,14 +372,14 @@ class CCRGPD_Admin
                                         </tr>
                                         <tr>
                                             <th>Finalité</th>
-                                            <td><input type="text" name="rgpd_settings[forms][<?php echo $id; ?>][purpose]" value="<?php echo esc_attr($config['purpose'] ?? ''); ?>" placeholder="Ex: Répondre à vos demandes de contact"></td>
+                                            <td><input type="text" name="rgpd_settings[forms][<?php echo $id; ?>][purpose]" value="<?php echo esc_attr($config['purpose'] ?? $suggestions['purpose']); ?>" placeholder="Ex: Répondre à vos demandes de contact"></td>
                                         </tr>
                                         <tr>
                                             <th>Base légale</th>
                                             <td>
                                                 <select name="rgpd_settings[forms][<?php echo $id; ?>][legal_basis]">
                                                     <?php foreach (CCRGPD_Constants::LEGAL_BASIS as $key => $label) : ?>
-                                                        <option value="<?php echo $key; ?>" <?php selected($config['legal_basis'] ?? 'consent', $key); ?>><?php echo esc_html($label); ?></option>
+                                                        <option value="<?php echo $key; ?>" <?php selected($config['legal_basis'] ?? $suggestions['legal_basis'], $key); ?>><?php echo esc_html($label); ?></option>
                                                     <?php endforeach; ?>
                                                 </select>
                                             </td>
@@ -386,7 +389,7 @@ class CCRGPD_Admin
                                             <td>
                                                 <select name="rgpd_settings[forms][<?php echo $id; ?>][retention]">
                                                     <?php foreach (CCRGPD_Constants::RETENTION as $key => $label) : ?>
-                                                        <option value="<?php echo $key; ?>" <?php selected($config['retention'] ?? '3_years', $key); ?>><?php echo esc_html($label); ?></option>
+                                                        <option value="<?php echo $key; ?>" <?php selected($config['retention'] ?? $suggestions['retention'], $key); ?>><?php echo esc_html($label); ?></option>
                                                     <?php endforeach; ?>
                                                 </select>
                                             </td>
