@@ -3,7 +3,7 @@
  * Plugin Name: Coordonnées & RGPD - By MATRYS
  * Plugin URI: https://github.com/JulienBataille/client-coordonnees-rgpd
  * Description: Coordonnées client/agence + mentions légales et politique de confidentialité conformes LCEN/RGPD avec traduction multi-langues.
- * Version: 3.6.1
+ * Version: 3.6.2
  * Author: MATRYS - Julien Bataillé
  * Author URI: https://matrys.fr
  * Text Domain: client-coordonnees
@@ -338,6 +338,7 @@ class Client_Coordonnees_RGPD_Plugin
         add_shortcode('client_email', [$this, 'shortcode_client_email']);
         add_shortcode('client_tel', [$this, 'shortcode_client_tel']);
         add_shortcode('client_address', [$this, 'shortcode_client_address']);
+        add_shortcode('client_address_etablissement', [$this, 'shortcode_client_address_etablissement']);
         add_shortcode('site_title', [$this, 'shortcode_site_title']);
         add_shortcode('site_link', [$this, 'shortcode_site_link']);
         add_shortcode('matrys_block', [$this, 'shortcode_matrys_block']);
@@ -385,7 +386,8 @@ class Client_Coordonnees_RGPD_Plugin
         $fields = [
             'client_raison_sociale'=>'sanitize_text_field',
             'client_email'=>'sanitize_email', 'client_tel'=>'sanitize_text_field', 'client_country'=>'sanitize_text_field',
-            'client_address'=>'sanitize_textarea_field', 'client_siret'=>'sanitize_text_field', 'client_rcs'=>'sanitize_text_field',
+            'client_address'=>'sanitize_textarea_field', 'client_address_etablissement'=>'sanitize_textarea_field',
+            'client_siret'=>'sanitize_text_field', 'client_rcs'=>'sanitize_text_field',
             'client_capital'=>'sanitize_text_field', 'client_tva'=>'sanitize_text_field', 'client_responsable'=>'sanitize_text_field',
             'client_forme_juridique'=>'sanitize_text_field',
             'client_forme_juridique_autre'=>'sanitize_text_field',
@@ -486,7 +488,8 @@ class Client_Coordonnees_RGPD_Plugin
                                 <select name="client_country" style="width:120px"><?php foreach (self::COUNTRIES as $c => $d) echo '<option value="'.$c.'" '.selected(get_option('client_country','FR'),$c,false).'>'.$d['name'].' ('.$d['code'].')</option>'; ?></select>
                                 <input type="tel" name="client_tel" value="<?php echo esc_attr(get_option('client_tel')); ?>" class="regular-text">
                             </td></tr>
-                            <tr><th>Adresse siège social *</th><td><textarea name="client_address" rows="3" class="large-text" required><?php echo esc_textarea(get_option('client_address')); ?></textarea><p class="description">Adresse complète obligatoire (pas de simple boîte postale)</p></td></tr>
+                            <tr><th>Adresse siège social *</th><td><textarea name="client_address" rows="3" class="large-text" required><?php echo esc_textarea(get_option('client_address')); ?></textarea><p class="description">Adresse complète obligatoire pour les mentions légales (pas de simple boîte postale)</p></td></tr>
+                            <tr><th>Adresse établissement</th><td><textarea name="client_address_etablissement" rows="3" class="large-text"><?php echo esc_textarea(get_option('client_address_etablissement')); ?></textarea><p class="description">Optionnel : adresse physique (restaurant, boutique...) si différente du siège social. Utilisée pour le contact/footer.</p></td></tr>
                             <tr><th>Responsable publication *</th><td><input type="text" name="client_responsable" value="<?php echo esc_attr(get_option('client_responsable')); ?>" class="regular-text" placeholder="Nom du dirigeant ou représentant légal"></td></tr>
                         </table>
                         
@@ -579,7 +582,9 @@ class Client_Coordonnees_RGPD_Plugin
                 </div>
                 <div class="coordonnees-wrap shortcode-list">
                     <h2>📍 Coordonnées</h2>
-                    <p><code>[site_title]</code> <code>[site_link]</code> <code>[client_email]</code> <code>[client_tel]</code> <code>[client_address]</code> <code>[matrys_block]</code></p>
+                    <p><code>[site_title]</code> <code>[site_link]</code> <code>[client_email]</code> <code>[client_tel]</code> <code>[matrys_block]</code></p>
+                    <p><code>[client_address]</code> → Adresse siège social (mentions légales)</p>
+                    <p><code>[client_address_etablissement]</code> → Adresse établissement (footer/contact) - fallback sur siège social si vide</p>
                 </div>
                 <div class="coordonnees-wrap shortcode-list" style="border-left-color:#46b450;">
                     <h2>🛡️ RGPD</h2>
@@ -631,6 +636,14 @@ class Client_Coordonnees_RGPD_Plugin
     public function shortcode_client_email() { $e = get_option('client_email'); return $e ? '<a href="mailto:'.esc_attr($e).'">'.esc_html($e).'</a>' : ''; }
     public function shortcode_client_tel() { $t = get_option('client_tel'); return $t ? '<a href="tel:'.$this->phone_href($t, get_option('client_country','FR')).'">'.esc_html($t).'</a>' : ''; }
     public function shortcode_client_address($a) { $ad = get_option('client_address'); if (!$ad) return ''; $a = shortcode_atts(['link'=>'yes'], $a); $h = nl2br(esc_html($ad)); return $a['link']==='yes' ? '<a href="https://www.google.com/maps?q='.urlencode($ad).'" target="_blank">'.$h.'</a>' : $h; }
+    public function shortcode_client_address_etablissement($a) { 
+        $ad = get_option('client_address_etablissement'); 
+        if (!$ad) $ad = get_option('client_address'); // Fallback sur siège social
+        if (!$ad) return ''; 
+        $a = shortcode_atts(['link'=>'yes'], $a); 
+        $h = nl2br(esc_html($ad)); 
+        return $a['link']==='yes' ? '<a href="https://www.google.com/maps?q='.urlencode($ad).'" target="_blank">'.$h.'</a>' : $h; 
+    }
     public function shortcode_site_title() { return esc_html(get_bloginfo('name')); }
     public function shortcode_site_link() { $u = home_url(); return '<a href="'.esc_url($u).'">'.esc_url($u).'</a>'; }
     public function shortcode_matrys_block() { return '<p><a href="'.esc_url($this->opt('matrys_url')).'" target="_blank">'.esc_html($this->opt('matrys_name')).'</a><br>'.nl2br(esc_html($this->opt('matrys_address'))).'<br>'.$this->t('tel').' : <a href="tel:'.$this->phone_href($this->opt('matrys_tel'), $this->opt('matrys_country')).'">'.esc_html($this->opt('matrys_tel')).'</a></p>'; }
