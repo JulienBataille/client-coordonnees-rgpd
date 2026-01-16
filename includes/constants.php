@@ -42,6 +42,10 @@ class CCRGPD_Constants
         '6540'=>'SCI','6541'=>'SCI','6542'=>'SCI',
         '5308'=>'SNC','5203'=>'SCOP','5309'=>'SCOP',
         '9210'=>'Association','9220'=>'Association','9221'=>'Association',
+        // Collectivités territoriales et EPCI
+        '7210'=>'Commune','7220'=>'Département','7230'=>'Région',
+        '7343'=>'Communauté urbaine','7344'=>'Communauté d\'agglomération',
+        '7345'=>'Métropole','7346'=>'Communauté de communes',
     ];
 
     public const GREFFES = [

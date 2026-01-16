@@ -7,6 +7,13 @@ class CCRGPD_API_Entreprises
     
     // Codes nature juridique des associations et fondations (pas de RCS)
     private const ASSOCIATIONS = ['9210', '9220', '9221', '9222', '9223', '9224', '9230', '9240', '9260', '9300'];
+    
+    // Préfixes des codes nature juridique pour les structures publiques (pas de RCS)
+    // 71xx = Administrations de l'État
+    // 72xx = Collectivités territoriales (communes, départements, régions)
+    // 73xx = EPCI (communautés de communes, d'agglomération, métropoles)
+    // 74xx = Autres établissements publics
+    private const PUBLIC_PREFIXES = ['71', '72', '73', '74'];
 
     public static function search($siret)
     {
@@ -39,9 +46,17 @@ class CCRGPD_API_Entreprises
         $siren = $e['siren'] ?? '';
         $cp = $siege['code_postal'] ?? '';
         $nature = $e['nature_juridique'] ?? '';
+        $prefix = substr($nature, 0, 2);
+        $complements = $e['complements'] ?? [];
         
         // Détecter si c'est une association (pas de RCS, TVA généralement non applicable)
-        $is_association = in_array($nature, self::ASSOCIATIONS) || substr($nature, 0, 2) === '92';
+        $is_association = in_array($nature, self::ASSOCIATIONS) || $prefix === '92';
+        
+        // Détecter si c'est une structure publique (pas de RCS, TVA variable)
+        $is_public = in_array($prefix, self::PUBLIC_PREFIXES);
+        
+        // Pas de RCS pour associations et structures publiques
+        $no_rcs = $is_association || $is_public;
 
         $result = [
             'raison_sociale' => $e['nom_raison_sociale'] ?? '',
@@ -49,19 +64,38 @@ class CCRGPD_API_Entreprises
             'siret' => $siege['siret'] ?? '',
             'siren' => $siren,
             'forme_juridique' => CCRGPD_Constants::NATURE_JURIDIQUE[$nature] ?? 'Autre',
-            'tva' => $is_association ? '' : self::calc_tva($siren),  // Pas de TVA par défaut pour les associations
-            'rcs' => $is_association ? '' : self::format_rcs($siren, $cp),  // Pas de RCS pour les associations
+            'tva' => ($is_association || $is_public) ? '' : self::calc_tva($siren),  // Pas de TVA par défaut
+            'rcs' => $no_rcs ? '' : self::format_rcs($siren, $cp),  // Pas de RCS
             'is_association' => $is_association,
+            'is_public' => $is_public,
             'dirigeants' => [],
             'annuaire_url' => 'https://annuaire-entreprises.data.gouv.fr/entreprise/' . $siren,
         ];
 
+        // Récupérer les dirigeants classiques (entreprises)
         foreach ($e['dirigeants'] ?? [] as $d) {
             if (($d['type_dirigeant'] ?? '') === 'personne physique') {
                 $result['dirigeants'][] = [
                     'full_name' => trim(($d['prenoms'] ?? '') . ' ' . ($d['nom'] ?? '')),
                     'qualite' => $d['qualite'] ?? '',
                 ];
+            }
+        }
+        
+        // Pour les collectivités : récupérer le président/maire comme dirigeant
+        if ($is_public && !empty($complements['collectivite_territoriale']['elus'])) {
+            $elus = $complements['collectivite_territoriale']['elus'];
+            
+            // Chercher le président, maire ou équivalent
+            foreach ($elus as $elu) {
+                $fonction = strtolower($elu['fonction'] ?? '');
+                if (strpos($fonction, 'président') !== false || strpos($fonction, 'maire') !== false) {
+                    $result['dirigeants'][] = [
+                        'full_name' => trim(($elu['prenoms'] ?? '') . ' ' . ($elu['nom'] ?? '')),
+                        'qualite' => $elu['fonction'] ?? 'Président',
+                    ];
+                    break; // On prend le premier trouvé
+                }
             }
         }
 
