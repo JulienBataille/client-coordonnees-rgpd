@@ -92,13 +92,24 @@ class CCRGPD_Shortcodes
             
             $c = $rgpd['forms'][$id];
             $name = $c['name_override'] ?: $f['name'];
-            $data = array_map(function($t) { 
-                return CCRGPD_Constants::FIELD_TYPES[$t] ?? $t; 
-            }, $f['fields']);
+            
+            // Utiliser l'analyse pour générer le texte des données
+            $dataText = '';
+            if (!empty($f['analysis']['categories'])) {
+                $dataText = CCRGPD_Form_Analyzer::generateLegalText($f['analysis']);
+            } else {
+                // Fallback : ancien système
+                $dataText = implode(', ', array_map(function($field) {
+                    if (is_array($field)) {
+                        return $field['label'] ?: (CCRGPD_Constants::FIELD_TYPES[$field['type']] ?? $field['type']);
+                    }
+                    return CCRGPD_Constants::FIELD_TYPES[$field] ?? $field;
+                }, $f['fields']));
+            }
 
             $out .= '<table class="rgpd-table" style="width:100%;border-collapse:collapse;margin-bottom:25px">';
             $out .= '<tr style="background:#f5f5f5"><th colspan="2" style="padding:12px 15px;text-align:left;border:1px solid #ddd;font-size:1.1em">' . esc_html($name) . '</th></tr>';
-            $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;width:35%;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_table_data') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html(implode(', ', $data)) . '</td></tr>';
+            $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;width:35%;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_table_data') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . wp_kses_post($dataText) . '</td></tr>';
             $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_table_purpose') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html($c['purpose'] ?: '-') . '</td></tr>';
             $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_table_legal') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html(CCRGPD_Constants::LEGAL_BASIS[$c['legal_basis']] ?? '-') . '</td></tr>';
             $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_table_retention') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html(CCRGPD_Constants::RETENTION[$c['retention']] ?? '-') . '</td></tr>';
@@ -317,24 +328,77 @@ class CCRGPD_Shortcodes
         $all = Forminator_API::get_forms(null, 1, 100, 'publish');
         if (empty($all)) return [];
         
-        foreach ($all as $form) {
+        foreach ($all as $formSummary) {
             $fields = [];
+            $formId = $formSummary->id;
             
-            // Récupérer les champs depuis $form->fields
-            if (!empty($form->fields)) {
-                foreach ($form->fields as $f) {
-                    // Forminator utilise des objets Forminator_Form_Field_Model
-                    $type = is_object($f) ? $f->type : (is_array($f) ? ($f['type'] ?? 'text') : 'text');
-                    if ($type && !in_array($type, $fields)) {
-                        $fields[] = $type;
-                    }
-                }
+            // Récupérer le formulaire complet pour avoir accès à raw['field_label']
+            $form = Forminator_API::get_form($formId);
+            if (!$form || empty($form->fields)) {
+                continue;
             }
             
-            $forms['forminator_' . $form->id] = [
-                'name' => $form->settings['formName'] ?? ($form->name ?? 'Formulaire #' . $form->id),
+            foreach ($form->fields as $field) {
+                // Récupérer le type
+                $type = $field->type ?? ($field->raw['type'] ?? 'text');
+                
+                // Récupérer le label - Forminator stocke dans raw['field_label']
+                $label = '';
+                if (isset($field->raw['field_label']) && !empty($field->raw['field_label'])) {
+                    $label = $field->raw['field_label'];
+                } elseif (!empty($field->field_label)) {
+                    $label = $field->field_label;
+                } elseif (!empty($field->label)) {
+                    $label = $field->label;
+                } elseif (isset($field->raw['label']) && !empty($field->raw['label'])) {
+                    $label = $field->raw['label'];
+                }
+                
+                // Gérer les champs composés (name, address) avec sous-labels
+                if ($type === 'name') {
+                    $raw = $field->raw ?? [];
+                    if (!empty($raw['fname']) || !empty($raw['fname_label'])) {
+                        $fields[] = ['type' => 'name', 'label' => $raw['fname_label'] ?? 'Prénom'];
+                    }
+                    if (!empty($raw['lname']) || !empty($raw['lname_label'])) {
+                        $fields[] = ['type' => 'name', 'label' => $raw['lname_label'] ?? 'Nom de famille'];
+                    }
+                    continue;
+                }
+                
+                if ($type === 'address') {
+                    $raw = $field->raw ?? [];
+                    if (!empty($raw['street_address'])) {
+                        $fields[] = ['type' => 'address', 'label' => $raw['street_address_label'] ?? 'Adresse'];
+                    }
+                    if (!empty($raw['address_city'])) {
+                        $fields[] = ['type' => 'address', 'label' => $raw['address_city_label'] ?? 'Ville'];
+                    }
+                    if (!empty($raw['address_zip'])) {
+                        $fields[] = ['type' => 'address', 'label' => $raw['address_zip_label'] ?? 'Code postal'];
+                    }
+                    if (!empty($raw['address_country'])) {
+                        $fields[] = ['type' => 'address', 'label' => $raw['address_country_label'] ?? 'Pays'];
+                    }
+                    continue;
+                }
+                
+                $fields[] = [
+                    'type' => $type,
+                    'label' => $label,
+                ];
+            }
+            
+            // Analyser les champs avec le nouvel analyseur
+            $analysis = class_exists('CCRGPD_Form_Analyzer') 
+                ? CCRGPD_Form_Analyzer::analyze($fields) 
+                : ['categories' => [], 'unrecognized' => [], 'ignored' => []];
+            
+            $forms['forminator_' . $formId] = [
+                'name' => $form->settings['formName'] ?? ($form->name ?? 'Formulaire #' . $formId),
                 'fields' => $fields,
-                'plugin' => 'Forminator'
+                'analysis' => $analysis,
+                'plugin' => 'Forminator',
             ];
         }
         return $forms;
@@ -358,34 +422,43 @@ class CCRGPD_Shortcodes
         if (empty($all)) return [];
         
         foreach ($all as $form) {
-            // Récupérer les blocs du formulaire pour identifier les types de champs
             $fields = [];
             $blocks = parse_blocks($form->post_content);
             
-            foreach ($blocks as $block) {
-                if (strpos($block['blockName'] ?? '', 'srfm/') === 0) {
-                    // Extraire le type de champ depuis le nom du bloc (ex: srfm/email -> email)
-                    $type = str_replace('srfm/', '', $block['blockName']);
-                    if ($type && !in_array($type, $fields)) {
-                        $fields[] = $type;
+            // Fonction récursive pour parcourir les blocs
+            $extractFields = function($blocks) use (&$extractFields, &$fields) {
+                foreach ($blocks as $block) {
+                    if (strpos($block['blockName'] ?? '', 'srfm/') === 0) {
+                        $type = str_replace('srfm/', '', $block['blockName']);
+                        $attrs = $block['attrs'] ?? [];
+                        
+                        // Récupérer le label depuis les attributs
+                        $label = $attrs['label'] ?? $attrs['fieldLabel'] ?? $attrs['placeholder'] ?? '';
+                        
+                        $fields[] = [
+                            'type' => $type,
+                            'label' => $label,
+                        ];
+                    }
+                    
+                    // Parcourir les blocs internes
+                    if (!empty($block['innerBlocks'])) {
+                        $extractFields($block['innerBlocks']);
                     }
                 }
-                // Parcourir les blocs internes aussi
-                if (!empty($block['innerBlocks'])) {
-                    foreach ($block['innerBlocks'] as $inner) {
-                        if (strpos($inner['blockName'] ?? '', 'srfm/') === 0) {
-                            $type = str_replace('srfm/', '', $inner['blockName']);
-                            if ($type && !in_array($type, $fields)) {
-                                $fields[] = $type;
-                            }
-                        }
-                    }
-                }
-            }
+            };
+            
+            $extractFields($blocks);
+            
+            // Analyser les champs avec le nouvel analyseur
+            $analysis = class_exists('CCRGPD_Form_Analyzer') 
+                ? CCRGPD_Form_Analyzer::analyze($fields) 
+                : ['categories' => [], 'unrecognized' => [], 'ignored' => []];
             
             $forms['sureforms_' . $form->ID] = [
                 'name' => $form->post_title ?: 'Formulaire #' . $form->ID,
                 'fields' => $fields,
+                'analysis' => $analysis,
                 'plugin' => 'SureForms'
             ];
         }

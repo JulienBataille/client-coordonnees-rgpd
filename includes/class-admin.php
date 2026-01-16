@@ -318,12 +318,50 @@ class CCRGPD_Admin
                                     <span class="dashicons dashicons-arrow-down-alt2"></span>
                                 </div>
                                 <div class="rgpd-form-body">
-                                    <div class="detected">
-                                        <strong>Champs détectés :</strong> 
-                                        <?php echo esc_html(implode(', ', array_map(function($t) { 
-                                            return CCRGPD_Constants::FIELD_TYPES[$t] ?? $t; 
-                                        }, $form['fields']))); ?>
-                                    </div>
+                                    <?php 
+                                    // Utiliser l'analyse si disponible
+                                    if (!empty($form['analysis'])) {
+                                        $analysis = $form['analysis'];
+                                        
+                                        // Afficher les catégories détectées
+                                        if (!empty($analysis['categories'])) {
+                                            echo '<div class="detected categories-detected">';
+                                            echo '<strong>📊 Données collectées :</strong> ';
+                                            $parts = [];
+                                            foreach ($analysis['categories'] as $catKey => $catData) {
+                                                $icon = $catData['info']['icon'];
+                                                $label = $catData['info']['label'];
+                                                $fields = implode(', ', array_map('strtolower', $catData['fields']));
+                                                $parts[] = '<span class="category-tag" title="' . esc_attr($fields) . '">' . $icon . ' ' . esc_html($label) . '</span>';
+                                            }
+                                            echo implode(' ', $parts);
+                                            echo '</div>';
+                                        }
+                                        
+                                        // Bannière d'avertissement pour les champs non reconnus
+                                        if (!empty($analysis['unrecognized'])) {
+                                            $unrecognized = array_map(function($f) { 
+                                                return $f['label'] ?: $f['type']; 
+                                            }, $analysis['unrecognized']);
+                                            echo '<div class="notice notice-warning inline" style="margin:10px 0;padding:8px 12px">';
+                                            echo '⚠️ <strong>Champs non catégorisés :</strong> ' . esc_html(implode(', ', $unrecognized));
+                                            echo '<br><small>Ces champs ne seront pas mentionnés dans la politique de confidentialité.</small>';
+                                            echo '</div>';
+                                        }
+                                    } else {
+                                        // Fallback ancien affichage
+                                        echo '<div class="detected">';
+                                        echo '<strong>Champs détectés :</strong> ';
+                                        $fieldLabels = array_map(function($f) {
+                                            if (is_array($f)) {
+                                                return $f['label'] ?: (CCRGPD_Constants::FIELD_TYPES[$f['type']] ?? $f['type']);
+                                            }
+                                            return CCRGPD_Constants::FIELD_TYPES[$f] ?? $f;
+                                        }, $form['fields']);
+                                        echo esc_html(implode(', ', $fieldLabels));
+                                        echo '</div>';
+                                    }
+                                    ?>
                                     <table class="rgpd-config">
                                         <tr>
                                             <th>Nom affiché</th>

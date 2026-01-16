@@ -231,3 +231,28 @@
     background: #6c5ce7;
     color: #fff;
 }
+
+/* Tags de catégories RGPD */
+.categories-detected {
+    margin-bottom: 15px;
+}
+.category-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    margin: 2px 4px 2px 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: help;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.category-tag:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(102, 126, 234, 0.4);
+}
+.rgpd-form-body .notice.notice-warning {
+    background: #fff8e5;
+    border-left-color: #ffb900;
+}
