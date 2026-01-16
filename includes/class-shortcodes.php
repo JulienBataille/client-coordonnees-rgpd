@@ -141,7 +141,7 @@ class CCRGPD_Shortcodes
     {
         $out = '';
         
-        // Utiliser le shortcode WP Consent si disponible
+        // Utiliser le shortcode WP Consent si disponible pour lister les cookies
         if (shortcode_exists('wpconsent_cookie_policy')) {
             $out .= do_shortcode('[wpconsent_cookie_policy]');
         } else {
@@ -150,18 +150,7 @@ class CCRGPD_Shortcodes
             $out .= '<li><strong>Google Analytics</strong> : _ga, _gid, _gat — Mesure d\'audience (durée : 13 mois maximum)</li>';
             $out .= '<li><strong>WordPress</strong> : wordpress_*, wp-settings-* — Gestion de session utilisateur (durée : session)</li>';
             $out .= '</ul>';
-        }
-        
-        // Bouton pour gérer les préférences
-        if (function_exists('wp_has_consent') || shortcode_exists('wpconsent_cookie_policy')) {
             $out .= '<p>' . self::t('cookies_manage_text') . '</p>';
-            $out .= '<p><button type="button" class="wp-consent-api-toggle button" style="cursor:pointer" onclick="';
-            $out .= 'if(typeof wpconsent !== \'undefined\' && wpconsent.openSettings){wpconsent.openSettings();}';
-            $out .= 'else if(typeof cmplz_open_popup === \'function\'){cmplz_open_popup();}';
-            $out .= 'else if(typeof Cookiebot === \'object\'){Cookiebot.renew();}';
-            $out .= 'else if(typeof __tcfapi === \'function\'){__tcfapi(\'displayConsentUi\',2,function(){});}';
-            $out .= 'else{alert(\'Gestionnaire de cookies non disponible\');}';
-            $out .= '">' . self::t('cookies_manage_button') . '</button></p>';
         }
         
         return $out;
