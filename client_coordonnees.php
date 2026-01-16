@@ -3,7 +3,7 @@
  * Plugin Name: Coordonnées & RGPD - By MATRYS
  * Plugin URI: https://github.com/JulienBataille/client-coordonnees-rgpd
  * Description: Coordonnées client/agence + mentions légales et politique de confidentialité conformes LCEN/RGPD avec traduction multi-langues.
- * Version: 3.6.1
+ * Version: 3.6.0
  * Author: MATRYS - Julien Bataillé
  * Author URI: https://matrys.fr
  * Text Domain: client-coordonnees
@@ -30,7 +30,6 @@ function ccrp_supprimer_ancienne_version() {
     $anciens_plugins = [
         'client_coordonnees_v3/client_coordonnees.php',
         'client_coordonnees/client_coordonnees.php',
-        'client-coordonnees/client_coordonnees.php',
     ];
     
     include_once(ABSPATH . 'wp-admin/includes/plugin.php');
@@ -50,11 +49,6 @@ function ccrp_supprimer_ancienne_version() {
             }
         }
     }
-}
-
-// Évite le conflit si chargé deux fois
-if (class_exists('Client_Coordonnees_RGPD_Plugin')) {
-    return;
 }
 
 class Client_Coordonnees_RGPD_Plugin

@@ -1,9 +1,9 @@
 <?php
 /**
  * MATRYS GitHub Plugin Updater
- * Permet la mise à jour automatique des plugins via GitHub Releases
+ * Mise à jour automatique via GitHub Releases
  * 
- * @version 1.0.0
+ * @version 1.1.0
  * @author MATRYS - Julien Bataillé
  */
 
@@ -14,43 +14,36 @@ if (!class_exists('MATRYS_GitHub_Updater')) {
     class MATRYS_GitHub_Updater {
         
         private $file;
-        private $plugin;
         private $basename;
         private $github_user;
         private $github_repo;
         private $github_token;
-        private $github_response;
-        private $active;
         
         public function __construct($file, $github_user, $github_repo, $token = null) {
             $this->file = $file;
+            $this->basename = plugin_basename($file);
             $this->github_user = $github_user;
             $this->github_repo = $github_repo;
             $this->github_token = $token;
             
-            add_action('admin_init', [$this, 'set_plugin_properties']);
             add_filter('pre_set_site_transient_update_plugins', [$this, 'check_update']);
             add_filter('plugins_api', [$this, 'plugin_info'], 10, 3);
             add_filter('upgrader_post_install', [$this, 'after_install'], 10, 3);
             add_filter('plugin_row_meta', [$this, 'plugin_meta'], 10, 2);
         }
         
-        public function set_plugin_properties() {
-            $this->plugin = get_plugin_data($this->file);
-            $this->basename = plugin_basename($this->file);
-            $this->active = is_plugin_active($this->basename);
+        private function get_plugin_data() {
+            if (!function_exists('get_plugin_data')) {
+                require_once(ABSPATH . 'wp-admin/includes/plugin.php');
+            }
+            return get_plugin_data($this->file);
         }
         
         private function get_github_release() {
-            if (!empty($this->github_response)) {
-                return $this->github_response;
-            }
-            
             $cache_key = 'matrys_ghupd_' . md5($this->github_repo);
             $cached = get_transient($cache_key);
             
             if ($cached !== false) {
-                $this->github_response = $cached;
                 return $cached;
             }
             
@@ -60,7 +53,7 @@ if (!class_exists('MATRYS_GitHub_Updater')) {
                 'timeout' => 10,
                 'headers' => [
                     'Accept' => 'application/vnd.github.v3+json',
-                    'User-Agent' => 'MATRYS-WP-Updater/1.0'
+                    'User-Agent' => 'MATRYS-WP-Updater/1.1'
                 ]
             ];
             
@@ -74,10 +67,13 @@ if (!class_exists('MATRYS_GitHub_Updater')) {
                 return false;
             }
             
-            $this->github_response = json_decode(wp_remote_retrieve_body($response));
-            set_transient($cache_key, $this->github_response, 6 * HOUR_IN_SECONDS);
+            $release = json_decode(wp_remote_retrieve_body($response));
             
-            return $this->github_response;
+            if ($release && isset($release->tag_name)) {
+                set_transient($cache_key, $release, 6 * HOUR_IN_SECONDS);
+            }
+            
+            return $release;
         }
         
         public function check_update($transient) {
@@ -85,11 +81,8 @@ if (!class_exists('MATRYS_GitHub_Updater')) {
                 return $transient;
             }
             
-            // Récupère les infos directement (ne pas dépendre de admin_init)
-            if (empty($this->plugin) || empty($this->basename)) {
-                $this->plugin = get_plugin_data($this->file);
-                $this->basename = plugin_basename($this->file);
-                $this->active = is_plugin_active($this->basename);
+            if (!isset($transient->checked[$this->basename])) {
+                return $transient;
             }
             
             $release = $this->get_github_release();
@@ -99,10 +92,11 @@ if (!class_exists('MATRYS_GitHub_Updater')) {
             }
             
             $remote_version = ltrim($release->tag_name, 'v');
-            $local_version = $this->plugin['Version'];
+            $local_version = $transient->checked[$this->basename];
             
             if (version_compare($remote_version, $local_version, '>')) {
                 $package = $release->zipball_url;
+                
                 if (!empty($release->assets)) {
                     foreach ($release->assets as $asset) {
                         if (substr($asset->name, -4) === '.zip') {
@@ -112,20 +106,18 @@ if (!class_exists('MATRYS_GitHub_Updater')) {
                     }
                 }
                 
-                if ($this->github_token && strpos($package, 'api.github.com') !== false) {
-                    $package = add_query_arg('access_token', $this->github_token, $package);
-                }
+                $plugin_data = $this->get_plugin_data();
                 
                 $transient->response[$this->basename] = (object) [
                     'slug'         => dirname($this->basename),
                     'plugin'       => $this->basename,
                     'new_version'  => $remote_version,
-                    'url'          => $this->plugin['PluginURI'] ?: "https://github.com/{$this->github_user}/{$this->github_repo}",
+                    'url'          => $plugin_data['PluginURI'] ?: "https://github.com/{$this->github_user}/{$this->github_repo}",
                     'package'      => $package,
                     'icons'        => [],
                     'banners'      => [],
                     'tested'       => get_bloginfo('version'),
-                    'requires_php' => $this->plugin['RequiresPHP'] ?? '7.4',
+                    'requires_php' => $plugin_data['RequiresPHP'] ?? '7.4',
                 ];
             }
             
@@ -141,29 +133,29 @@ if (!class_exists('MATRYS_GitHub_Updater')) {
                 return $result;
             }
             
-            $this->set_plugin_properties();
             $release = $this->get_github_release();
             
             if (!$release) {
                 return $result;
             }
             
+            $plugin_data = $this->get_plugin_data();
             $remote_version = ltrim($release->tag_name, 'v');
             
             return (object) [
-                'name'          => $this->plugin['Name'],
+                'name'          => $plugin_data['Name'],
                 'slug'          => dirname($this->basename),
                 'version'       => $remote_version,
-                'author'        => $this->plugin['AuthorName'],
-                'author_profile'=> $this->plugin['AuthorURI'],
-                'homepage'      => $this->plugin['PluginURI'] ?: "https://github.com/{$this->github_user}/{$this->github_repo}",
-                'requires'      => $this->plugin['RequiresWP'] ?? '5.0',
-                'requires_php'  => $this->plugin['RequiresPHP'] ?? '7.4',
+                'author'        => $plugin_data['AuthorName'],
+                'author_profile'=> $plugin_data['AuthorURI'],
+                'homepage'      => $plugin_data['PluginURI'] ?: "https://github.com/{$this->github_user}/{$this->github_repo}",
+                'requires'      => $plugin_data['RequiresWP'] ?? '5.0',
+                'requires_php'  => $plugin_data['RequiresPHP'] ?? '7.4',
                 'tested'        => get_bloginfo('version'),
                 'downloaded'    => 0,
                 'last_updated'  => $release->published_at ?? '',
                 'sections'      => [
-                    'description' => $this->plugin['Description'],
+                    'description' => $plugin_data['Description'],
                     'changelog'   => $this->format_changelog($release->body ?? ''),
                 ],
                 'download_link' => $release->zipball_url,
@@ -194,12 +186,12 @@ if (!class_exists('MATRYS_GitHub_Updater')) {
             
             $proper_folder = WP_PLUGIN_DIR . '/' . dirname($this->basename);
             
-            if ($result['destination'] !== $proper_folder) {
+            if (isset($result['destination']) && $result['destination'] !== $proper_folder) {
                 $wp_filesystem->move($result['destination'], $proper_folder);
                 $result['destination'] = $proper_folder;
             }
             
-            if ($this->active) {
+            if (is_plugin_active($this->basename)) {
                 activate_plugin($this->basename);
             }
             
