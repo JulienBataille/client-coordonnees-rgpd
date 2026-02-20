@@ -5,6 +5,8 @@ class CCRGPD_Constants
 {
     public const MENU_SLUG = 'coordonnees-client';
     public const OPTION_GROUP = 'coordonnees_client_group';
+    public const OPTION_GROUP_JURIDIQUE = 'coordonnees_juridique_group';
+    public const OPTION_GROUP_AGENCE = 'coordonnees_agence_group';
     public const OPTION_GROUP_RGPD = 'coordonnees_rgpd_group';
 
     public const COUNTRIES = [

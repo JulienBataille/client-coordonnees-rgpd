@@ -7,19 +7,6 @@ jQuery(document).ready(function($) {
     
     // ==================== GESTION DES ONGLETS ====================
     
-    // Fonction pour mettre à jour la visibilité du bouton
-    function updateSubmitButton(target) {
-        if (target === '#tab-rgpd' || target === '#tab-shortcodes') {
-            $('#submit-main').hide();
-        } else {
-            $('#submit-main').show();
-        }
-    }
-    
-    // Initialisation: afficher le bouton sur l'onglet initial
-    var initialTab = $('.nav-tab-active').attr('href') || '#tab-coordonnees';
-    updateSubmitButton(initialTab);
-    
     // Clic sur les onglets
     $('.nav-tab').on('click', function(e) {
         e.preventDefault();
@@ -32,9 +19,6 @@ jQuery(document).ready(function($) {
         // Afficher le contenu correspondant
         $('.tab-content').removeClass('active');
         $(target).addClass('active');
-        
-        // Mettre à jour le bouton submit
-        updateSubmitButton(target);
     });
     
     // ==================== ACCORDÉON RGPD ====================
@@ -248,6 +232,35 @@ jQuery(document).ready(function($) {
         $('html, body').animate({
             scrollTop: $('[name="client_raison_sociale"]').offset().top - 100
         }, 500);
+    });
+    
+    // ==================== OUTILS: SETUP LEGAL ====================
+    
+    $('#btn-setup-legal').on('click', function() {
+        var $btn = $(this);
+        var $result = $('#setup-legal-result');
+        
+        if (!confirm('Cette action va créer/mettre à jour les pages légales et le menu footer. Continuer ?')) {
+            return;
+        }
+        
+        $btn.prop('disabled', true).text('⏳ Génération en cours...');
+        $result.html('');
+        
+        $.post(ccrgpd.ajax_url, {
+            action: 'ccrgpd_setup_legal',
+            nonce: ccrgpd.nonce
+        }, function(response) {
+            if (response.success) {
+                $result.html('<div style="padding:15px;background:#d4edda;border:1px solid #28a745;border-radius:6px;color:#155724">' + response.data + '</div>');
+            } else {
+                $result.html('<div style="padding:15px;background:#f8d7da;border:1px solid #dc3545;border-radius:6px;color:#721c24">❌ ' + response.data + '</div>');
+            }
+            $btn.prop('disabled', false).text('🚀 Générer les pages légales & menu footer');
+        }).fail(function() {
+            $result.html('<div style="padding:15px;background:#f8d7da;border:1px solid #dc3545;border-radius:6px;color:#721c24">❌ Erreur réseau</div>');
+            $btn.prop('disabled', false).text('🚀 Générer les pages légales & menu footer');
+        });
     });
     
 });
