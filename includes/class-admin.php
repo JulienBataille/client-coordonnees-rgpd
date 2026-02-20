@@ -10,7 +10,6 @@ class CCRGPD_Admin
         add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue_assets']);
         add_action('wp_ajax_ccrgpd_search_siret', [__CLASS__, 'ajax_search_siret']);
         add_action('wp_ajax_ccrgpd_get_current', [__CLASS__, 'ajax_get_current']);
-        add_action('wp_ajax_ccrgpd_setup_legal', [__CLASS__, 'ajax_setup_legal']);
     }
 
     public static function add_menu()
@@ -28,29 +27,19 @@ class CCRGPD_Admin
 
     public static function register_settings()
     {
-        // Groupe 1: Coordonnées de contact
-        $contact_fields = ['client_email', 'client_tel', 'client_country', 'client_address'];
-        foreach ($contact_fields as $field) {
+        // TOUS les champs dans le MÊME groupe (sauf RGPD)
+        $fields = [
+            'client_raison_sociale', 'client_email', 'client_tel', 'client_country', 'client_address',
+            'client_address_siege', 'client_siret', 'client_siren', 'client_rcs', 'client_capital',
+            'client_tva', 'client_responsable', 'client_forme_juridique', 'client_forme_juridique_autre',
+            'matrys_name', 'matrys_url', 'matrys_address', 'matrys_tel', 'matrys_country',
+        ];
+        
+        foreach ($fields as $field) {
             register_setting(CCRGPD_Constants::OPTION_GROUP, $field);
         }
         
-        // Groupe 2: Juridique
-        $juridique_fields = [
-            'client_raison_sociale', 'client_address_siege', 'client_siret', 'client_siren',
-            'client_rcs', 'client_capital', 'client_tva', 'client_responsable',
-            'client_forme_juridique', 'client_forme_juridique_autre',
-        ];
-        foreach ($juridique_fields as $field) {
-            register_setting(CCRGPD_Constants::OPTION_GROUP_JURIDIQUE, $field);
-        }
-        
-        // Groupe 3: Agence
-        $agence_fields = ['matrys_name', 'matrys_url', 'matrys_address', 'matrys_tel', 'matrys_country'];
-        foreach ($agence_fields as $field) {
-            register_setting(CCRGPD_Constants::OPTION_GROUP_AGENCE, $field);
-        }
-        
-        // Groupe 4: RGPD (déjà séparé)
+        // RGPD dans un groupe séparé (OK car onglet distinct avec son propre bouton)
         register_setting(CCRGPD_Constants::OPTION_GROUP_RGPD, 'rgpd_settings', [__CLASS__, 'sanitize_rgpd']);
     }
 
@@ -130,13 +119,17 @@ class CCRGPD_Admin
                 <a href="#tab-agence" class="nav-tab">🏢 Agence</a>
                 <a href="#tab-rgpd" class="nav-tab">🛡️ RGPD</a>
                 <a href="#tab-shortcodes" class="nav-tab">🔧 Shortcodes</a>
-                <a href="#tab-outils" class="nav-tab">⚙️ Outils</a>
             </nav>
             
-            <!-- ONGLET COORDONNÉES -->
-            <div id="tab-coordonnees" class="tab-content active">
-                <form method="post" action="options.php" id="form-coordonnees">
-                    <?php settings_fields(CCRGPD_Constants::OPTION_GROUP); ?>
+            <!-- ============================================================ -->
+            <!-- FORMULAIRE UNIQUE pour Coordonnées + Juridique + Agence      -->
+            <!-- Tous les champs sont dans le même formulaire = pas d'écrasement -->
+            <!-- ============================================================ -->
+            <form method="post" action="options.php" id="form-main">
+                <?php settings_fields(CCRGPD_Constants::OPTION_GROUP); ?>
+                
+                <!-- ONGLET COORDONNÉES -->
+                <div id="tab-coordonnees" class="tab-content active">
                     <div class="ccrgpd-box">
                         <h2>Coordonnées de contact</h2>
                         <p class="description">Informations affichées sur le site (footer, page contact...)</p>
@@ -165,14 +158,10 @@ class CCRGPD_Admin
                             </tr>
                         </table>
                     </div>
-                    <?php submit_button('💾 Enregistrer les coordonnées'); ?>
-                </form>
-            </div>
+                </div>
                 
-            <!-- ONGLET JURIDIQUE -->
-            <div id="tab-juridique" class="tab-content">
-                <form method="post" action="options.php" id="form-juridique">
-                    <?php settings_fields(CCRGPD_Constants::OPTION_GROUP_JURIDIQUE); ?>
+                <!-- ONGLET JURIDIQUE -->
+                <div id="tab-juridique" class="tab-content">
                     <div class="ccrgpd-box">
                         <h2>🔍 Recherche automatique par SIRET</h2>
                         <p class="description">Remplissez automatiquement les informations légales via l'API Recherche d'Entreprises (data.gouv.fr)</p>
@@ -238,14 +227,10 @@ class CCRGPD_Admin
                             </tr>
                         </table>
                     </div>
-                    <?php submit_button('💾 Enregistrer les informations légales'); ?>
-                </form>
-            </div>
+                </div>
                 
-            <!-- ONGLET AGENCE -->
-            <div id="tab-agence" class="tab-content">
-                <form method="post" action="options.php" id="form-agence">
-                    <?php settings_fields(CCRGPD_Constants::OPTION_GROUP_AGENCE); ?>
+                <!-- ONGLET AGENCE -->
+                <div id="tab-agence" class="tab-content">
                     <div class="ccrgpd-box">
                         <h2>Agence MATRYS (Hébergeur)</h2>
                         <p class="description">Informations affichées dans "Réalisation et hébergement" des mentions légales</p>
@@ -275,9 +260,13 @@ class CCRGPD_Admin
                             </tr>
                         </table>
                     </div>
-                    <?php submit_button('💾 Enregistrer les informations agence'); ?>
-                </form>
-            </div>
+                </div>
+                
+                <!-- Bouton submit pour le formulaire principal -->
+                <p class="submit" id="submit-main">
+                    <input type="submit" class="button button-primary" value="💾 Enregistrer">
+                </p>
+            </form>
             
             <!-- ============================================================ -->
             <!-- ONGLET RGPD - Formulaire séparé (c'est OK car indépendant)   -->
@@ -449,209 +438,13 @@ class CCRGPD_Admin
                     </div>
                 </div>
             </div>
-            <!-- ONGLET OUTILS -->
-            <div id="tab-outils" class="tab-content">
-                <div class="ccrgpd-box">
-                    <h2>Configuration initiale du site</h2>
-                    <p>Ces outils permettent d'automatiser la mise en place des pages légales et du menu footer lors de la création d'un nouveau site client.</p>
-                    
-                    <hr>
-                    
-                    <h3>📄 Pages légales & Menu Footer</h3>
-                    <p>Cette action va :</p>
-                    <ol>
-                        <li><strong>Politique de confidentialité</strong> — Récupère la page WordPress par défaut (brouillon), remplace son contenu par <code>[politique_confidentialite]</code> et la publie</li>
-                        <li><strong>Mentions légales</strong> — Crée une nouvelle page avec le shortcode <code>[mentions_legales]</code> et la publie</li>
-                        <li><strong>Menu Footer</strong> — Crée un menu « Footer » avec les liens vers ces 2 pages et l'assigne à l'emplacement <code>footer-menu</code></li>
-                    </ol>
-                    
-                    <?php self::render_tools_status(); ?>
-                    
-                    <p style="margin-top: 20px;">
-                        <button type="button" id="btn-setup-legal" class="button button-primary button-hero">
-                            🚀 Générer les pages légales & menu footer
-                        </button>
-                    </p>
-                    <div id="setup-legal-result" style="margin-top: 15px;"></div>
-                </div>
-            </div>
         </div>
         <?php
-    }
-
-    /**
-     * Affiche le statut actuel des pages légales et menu footer
-     */
-    private static function render_tools_status()
-    {
-        // Politique de confidentialité
-        $privacy_page_id = (int) get_option('wp_page_for_privacy_policy');
-        $privacy_page = $privacy_page_id ? get_post($privacy_page_id) : null;
-        $privacy_ok = $privacy_page && $privacy_page->post_status === 'publish' && has_shortcode($privacy_page->post_content, 'politique_confidentialite');
-        
-        // Mentions légales
-        $mentions_page = get_page_by_path('mentions-legales');
-        if (!$mentions_page) {
-            // Chercher par contenu de shortcode
-            $pages = get_posts([
-                'post_type' => 'page',
-                'post_status' => 'publish',
-                'posts_per_page' => 1,
-                's' => '[mentions_legales]',
-            ]);
-            $mentions_page = $pages[0] ?? null;
-        }
-        $mentions_ok = $mentions_page && $mentions_page->post_status === 'publish';
-        
-        // Menu footer
-        $menu = wp_get_nav_menu_object('Footer');
-        $locations = get_nav_menu_locations();
-        $menu_assigned = $menu && isset($locations['footer-menu']) && $locations['footer-menu'] == $menu->term_id;
-        
-        $status = function($ok, $label) {
-            $icon = $ok ? '✅' : '⬜';
-            $text = $ok ? '<span style="color:#46b450;">' . $label . '</span>' : $label;
-            return "<li>{$icon} {$text}</li>";
-        };
-        
-        echo '<div class="ccrgpd-status" style="background:#f9f9f9; padding:15px; border-radius:6px; margin-top:15px;">';
-        echo '<strong>Statut actuel :</strong>';
-        echo '<ul style="margin-top:10px;">';
-        echo $status($privacy_ok, 'Politique de confidentialité — publiée avec shortcode');
-        echo $status($mentions_ok, 'Mentions légales — page créée et publiée');
-        echo $status((bool)$menu, 'Menu « Footer » — créé');
-        echo $status($menu_assigned, 'Menu « Footer » — assigné à l\'emplacement footer-menu');
-        echo '</ul></div>';
     }
 
     private static function opt($key)
     {
         $value = get_option($key);
         return ($value !== false && $value !== '') ? $value : (CCRGPD_Constants::DEFAULT_OPTIONS[$key] ?? '');
-    }
-
-    /**
-     * AJAX: Créer les pages légales et le menu footer
-     */
-    public static function ajax_setup_legal()
-    {
-        check_ajax_referer('ccrgpd_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error('Permissions insuffisantes.');
-        }
-
-        $results = [];
-
-        // 1. Politique de confidentialité
-        $privacy_page_id = (int) get_option('wp_page_for_privacy_policy');
-        if ($privacy_page_id && get_post($privacy_page_id)) {
-            wp_update_post([
-                'ID' => $privacy_page_id,
-                'post_content' => '[politique_confidentialite]',
-                'post_status' => 'publish',
-            ]);
-            $results[] = '✅ Politique de confidentialité mise à jour et publiée (ID ' . $privacy_page_id . ')';
-        } else {
-            // Pas de page par défaut, on en crée une
-            $privacy_page_id = wp_insert_post([
-                'post_title' => 'Politique de confidentialité',
-                'post_name' => 'politique-de-confidentialite',
-                'post_content' => '[politique_confidentialite]',
-                'post_status' => 'publish',
-                'post_type' => 'page',
-            ]);
-            if ($privacy_page_id && !is_wp_error($privacy_page_id)) {
-                update_option('wp_page_for_privacy_policy', $privacy_page_id);
-                $results[] = '✅ Politique de confidentialité créée et publiée (ID ' . $privacy_page_id . ')';
-            } else {
-                $results[] = '❌ Erreur lors de la création de la page Politique de confidentialité';
-            }
-        }
-
-        // 2. Mentions légales
-        $mentions_page = get_page_by_path('mentions-legales');
-        if ($mentions_page) {
-            wp_update_post([
-                'ID' => $mentions_page->ID,
-                'post_content' => '[mentions_legales]',
-                'post_status' => 'publish',
-            ]);
-            $results[] = '✅ Mentions légales mise à jour et publiée (ID ' . $mentions_page->ID . ')';
-            $mentions_page_id = $mentions_page->ID;
-        } else {
-            $mentions_page_id = wp_insert_post([
-                'post_title' => 'Mentions légales',
-                'post_name' => 'mentions-legales',
-                'post_content' => '[mentions_legales]',
-                'post_status' => 'publish',
-                'post_type' => 'page',
-            ]);
-            if ($mentions_page_id && !is_wp_error($mentions_page_id)) {
-                $results[] = '✅ Mentions légales créée et publiée (ID ' . $mentions_page_id . ')';
-            } else {
-                $results[] = '❌ Erreur lors de la création de la page Mentions légales';
-                $mentions_page_id = 0;
-            }
-        }
-
-        // 3. Menu Footer
-        $menu_name = 'Footer';
-        $menu = wp_get_nav_menu_object($menu_name);
-        
-        if (!$menu) {
-            $menu_id = wp_create_nav_menu($menu_name);
-            if (is_wp_error($menu_id)) {
-                $results[] = '❌ Erreur lors de la création du menu : ' . $menu_id->get_error_message();
-            } else {
-                $results[] = '✅ Menu « Footer » créé';
-            }
-        } else {
-            $menu_id = $menu->term_id;
-            // Vider les items existants pour repartir propre
-            $items = wp_get_nav_menu_items($menu_id);
-            if ($items) {
-                foreach ($items as $item) {
-                    wp_delete_post($item->ID, true);
-                }
-            }
-            $results[] = '✅ Menu « Footer » existant — items réinitialisés';
-        }
-
-        if (!is_wp_error($menu_id)) {
-            // Ajouter Mentions légales
-            if ($mentions_page_id) {
-                wp_update_nav_menu_item($menu_id, 0, [
-                    'menu-item-title' => 'Mentions légales',
-                    'menu-item-object' => 'page',
-                    'menu-item-object-id' => $mentions_page_id,
-                    'menu-item-type' => 'post_type',
-                    'menu-item-status' => 'publish',
-                    'menu-item-position' => 1,
-                ]);
-            }
-            
-            // Ajouter Politique de confidentialité
-            if ($privacy_page_id) {
-                wp_update_nav_menu_item($menu_id, 0, [
-                    'menu-item-title' => 'Politique de confidentialité',
-                    'menu-item-object' => 'page',
-                    'menu-item-object-id' => $privacy_page_id,
-                    'menu-item-type' => 'post_type',
-                    'menu-item-status' => 'publish',
-                    'menu-item-position' => 2,
-                ]);
-            }
-            
-            $results[] = '✅ Liens ajoutés au menu Footer';
-            
-            // 4. Assigner à l'emplacement footer-menu
-            $locations = get_theme_mod('nav_menu_locations', []);
-            $locations['footer-menu'] = $menu_id;
-            set_theme_mod('nav_menu_locations', $locations);
-            $results[] = '✅ Menu assigné à l\'emplacement « footer-menu »';
-        }
-
-        wp_send_json_success(implode('<br>', $results));
     }
 }
