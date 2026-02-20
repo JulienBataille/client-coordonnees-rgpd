@@ -192,7 +192,9 @@ class CCRGPD_Shortcodes
         $u = home_url();
 
         ob_start();
-        
+
+        echo '<h1>' . esc_html(self::t('ml_title')) . '</h1>';
+
         // === ÉDITEUR DU SITE ===
         echo '<h2>' . esc_html(self::t('ml_editor')) . '</h2>';
         echo '<p>' . sprintf(self::t('ml_editor_intro'), '<a href="' . esc_url($u) . '">' . esc_url($u) . '</a>') . '</p>';
@@ -258,6 +260,8 @@ class CCRGPD_Shortcodes
         }
 
         ob_start();
+
+        echo '<h2>' . esc_html(self::t('pc_title')) . '</h2>';
 
         // === INTRODUCTION ===
         echo '<p>' . sprintf(self::t('pc_intro'), '<strong>' . esc_html($n) . '</strong>', '<a href="' . esc_url($u) . '">' . esc_url($u) . '</a>') . '</p>';

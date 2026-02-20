@@ -132,6 +132,9 @@ class CCRGPD_Constants
             'dpa_name' => 'CNIL',
             'dpa_url' => 'https://www.cnil.fr',
             
+            // Mentions légales - Titre
+            'ml_title' => 'Mentions légales',
+
             // Mentions légales - Éditeur
             'ml_editor' => 'Éditeur du site',
             'ml_editor_intro' => 'Le site %s est édité par :',
@@ -157,6 +160,9 @@ class CCRGPD_Constants
             'ml_privacy_link' => 'Pour en savoir plus sur le traitement de vos données personnelles, consultez notre %s.',
             'ml_privacy_page' => 'politique de confidentialité',
             
+            // Politique de confidentialité - Titre
+            'pc_title' => 'Politique de confidentialité',
+
             // Politique de confidentialité - Introduction
             'pc_intro' => '%s s\'engage à ce que les traitements de données personnelles effectués sur %s soient conformes au Règlement Général sur la Protection des Données (RGPD) et à la loi Informatique et Libertés.',
             
@@ -202,6 +208,7 @@ class CCRGPD_Constants
         'en_US' => [
             'dpa_name' => 'ICO',
             'dpa_url' => 'https://ico.org.uk',
+            'ml_title' => 'Legal Notice',
             'ml_editor' => 'Website Publisher',
             'ml_editor_intro' => 'The website %s is published by:',
             'ml_responsible' => 'Publication Manager:',
@@ -217,6 +224,7 @@ class CCRGPD_Constants
             'ml_personal_data_text' => 'The publisher is committed to ensuring that personal data processing complies with the GDPR and applicable data protection laws.',
             'ml_privacy_link' => 'For more information about how your data is processed, see our %s.',
             'ml_privacy_page' => 'privacy policy',
+            'pc_title' => 'Privacy Policy',
             'pc_intro' => '%s is committed to ensuring that personal data processing on %s complies with the GDPR and applicable data protection laws.',
             'pc_data_collected' => 'Data Collected',
             'pc_data_text1' => 'We are committed to collecting only the minimum data necessary for the proper functioning of the service provided by this website. Whether data is mandatory or optional is indicated at the time of entry.',
