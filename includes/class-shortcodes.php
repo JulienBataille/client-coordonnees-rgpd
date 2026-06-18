@@ -261,7 +261,7 @@ class CCRGPD_Shortcodes
 
         ob_start();
 
-        echo '<h2>' . esc_html(self::t('pc_title')) . '</h2>';
+        echo '<h1>' . esc_html(self::t('pc_title')) . '</h1>';
 
         // === INTRODUCTION ===
         echo '<p>' . sprintf(self::t('pc_intro'), '<strong>' . esc_html($n) . '</strong>', '<a href="' . esc_url($u) . '">' . esc_url($u) . '</a>') . '</p>';
