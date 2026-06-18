@@ -14,7 +14,7 @@
 
 defined('ABSPATH') || exit;
 
-define('CCRGPD_VERSION', '4.1.2');
+define('CCRGPD_VERSION', '4.1.3');
 define('CCRGPD_PATH', plugin_dir_path(__FILE__));
 define('CCRGPD_URL', plugin_dir_url(__FILE__));
 
