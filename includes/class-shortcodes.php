@@ -72,7 +72,7 @@ class CCRGPD_Shortcodes
         $t = self::opt('matrys_tel');
 
         $out = '<div class="matrys-block">';
-        $out .= '<strong><a href="' . esc_url($u) . '" target="_blank" rel="noopener">' . esc_html($n) . '</a></strong><br>';
+        $out .= '<strong><a href="' . esc_url($u) . '" target="_blank" rel="noopener nofollow">' . esc_html($n) . '</a></strong><br>';
         $out .= nl2br(esc_html($a));
         if ($t) $out .= '<br>' . self::t('tel') . ' : ' . esc_html($t);
         $out .= '</div>';
