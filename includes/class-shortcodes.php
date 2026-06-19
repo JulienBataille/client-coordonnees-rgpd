@@ -196,6 +196,7 @@ class CCRGPD_Shortcodes
         echo '<h1>' . esc_html(self::t('ml_title')) . '</h1>';
 
         // === ÉDITEUR DU SITE ===
+        echo '<div class="ccrgpd-section ccrgpd-section--editeur">';
         echo '<h2>' . esc_html(self::t('ml_editor')) . '</h2>';
         echo '<p>' . sprintf(self::t('ml_editor_intro'), '<a href="' . esc_url($u) . '">' . esc_url($u) . '</a>') . '</p>';
         
@@ -213,25 +214,33 @@ class CCRGPD_Shortcodes
         if ($r) {
             echo '<p><strong>' . esc_html(self::t('ml_responsible')) . '</strong> ' . esc_html($r) . '</p>';
         }
+        echo '</div>';
 
         // === HÉBERGEMENT ===
+        echo '<div class="ccrgpd-section ccrgpd-section--hebergement">';
         echo '<h2>' . esc_html(self::t('ml_hosting')) . '</h2>';
         echo self::matrys_block();
+        echo '</div>';
 
         // === PROPRIÉTÉ INTELLECTUELLE ===
+        echo '<div class="ccrgpd-section ccrgpd-section--propriete">';
         echo '<h2>' . esc_html(self::t('ml_intellectual')) . '</h2>';
         echo '<p>' . esc_html(self::t('ml_intellectual_text')) . '</p>';
         if ($e) {
             echo '<p>' . sprintf(self::t('ml_intellectual_contact'), '<a href="mailto:' . esc_attr($e) . '">' . esc_html($e) . '</a>') . '</p>';
         }
+        echo '</div>';
 
         // === INFORMATIONS ET EXCLUSIONS ===
+        echo '<div class="ccrgpd-section ccrgpd-section--informations">';
         echo '<h2>' . esc_html(self::t('ml_info')) . '</h2>';
         echo '<p>' . esc_html(self::t('ml_info_text1')) . '</p>';
         echo '<p>' . esc_html(self::t('ml_info_text2')) . '</p>';
         echo '<p>' . esc_html(self::t('ml_info_text3')) . '</p>';
+        echo '</div>';
 
         // === DONNÉES PERSONNELLES ===
+        echo '<div class="ccrgpd-section ccrgpd-section--donnees">';
         echo '<h2>' . esc_html(self::t('ml_personal_data')) . '</h2>';
         echo '<p>' . esc_html(self::t('ml_personal_data_text')) . '</p>';
         
@@ -239,6 +248,7 @@ class CCRGPD_Shortcodes
         if ($privacy_url) {
             echo '<p>' . sprintf(self::t('ml_privacy_link'), '<a href="' . esc_url($privacy_url) . '">' . esc_html(self::t('ml_privacy_page')) . '</a>') . '</p>';
         }
+        echo '</div>';
 
         return ob_get_clean();
     }
@@ -264,25 +274,34 @@ class CCRGPD_Shortcodes
         echo '<h1>' . esc_html(self::t('pc_title')) . '</h1>';
 
         // === INTRODUCTION ===
+        echo '<div class="ccrgpd-section ccrgpd-section--intro">';
         echo '<p>' . sprintf(self::t('pc_intro'), '<strong>' . esc_html($n) . '</strong>', '<a href="' . esc_url($u) . '">' . esc_url($u) . '</a>') . '</p>';
+        echo '</div>';
 
         // === DONNÉES COLLECTÉES (TEXTES COMPLETS) ===
+        echo '<div class="ccrgpd-section ccrgpd-section--donnees">';
         echo '<h2>' . esc_html(self::t('pc_data_collected')) . '</h2>';
         echo '<p>' . esc_html(self::t('pc_data_text1')) . '</p>';
         echo '<p>' . esc_html(self::t('pc_data_text2')) . '</p>';
         echo '<p>' . esc_html(self::t('pc_data_text3')) . '</p>';
+        echo '</div>';
 
         // === TRAITEMENTS DE DONNÉES ===
         if ($has_forms) {
+            echo '<div class="ccrgpd-section ccrgpd-section--traitements">';
             echo '<h2>' . esc_html(self::t('pc_treatments')) . '</h2>';
             echo self::rgpd_mentions([]);
+            echo '</div>';
         }
 
         // === EXERCER VOS DROITS ===
+        echo '<div class="ccrgpd-section ccrgpd-section--droits">';
         echo '<h2>' . esc_html(self::t('rights_title')) . '</h2>';
         echo self::rgpd_droits();
+        echo '</div>';
 
         // === COOKIES ===
+        echo '<div class="ccrgpd-section ccrgpd-section--cookies">';
         echo '<h2>' . esc_html(self::t('cookies_title')) . '</h2>';
         
         echo '<h3>' . esc_html(self::t('cookies_info_title')) . '</h3>';
@@ -303,6 +322,7 @@ class CCRGPD_Shortcodes
         echo '<li><a href="https://support.mozilla.org/fr/kb/activer-desactiver-cookies" target="_blank" rel="noopener">Mozilla Firefox</a></li>';
         echo '<li><a href="https://help.opera.com/fr/latest/web-preferences/#cookies" target="_blank" rel="noopener">Opera</a></li>';
         echo '</ul>';
+        echo '</div>';
 
         return ob_get_clean();
     }
