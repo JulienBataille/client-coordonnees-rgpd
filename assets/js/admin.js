@@ -9,7 +9,7 @@ jQuery(document).ready(function($) {
     
     // Fonction pour mettre à jour la visibilité du bouton
     function updateSubmitButton(target) {
-        if (target === '#tab-rgpd' || target === '#tab-shortcodes') {
+        if (target === '#tab-rgpd' || target === '#tab-seo' || target === '#tab-shortcodes') {
             $('#submit-main').hide();
         } else {
             $('#submit-main').show();
@@ -35,6 +35,19 @@ jQuery(document).ready(function($) {
         
         // Mettre à jour le bouton submit
         updateSubmitButton(target);
+    });
+
+    // Onglet demandé dans l'URL (retour d'enregistrement de l'onglet SEO : #tab-seo)
+    if (window.location.hash && $('.nav-tab[href="' + window.location.hash + '"]').length) {
+        $('.nav-tab[href="' + window.location.hash + '"]').trigger('click');
+    }
+
+    // ==================== ONGLET SEO ====================
+    $('#ccrgpd_sync').on('change', function() {
+        $('.ccrgpd-seo-identity input').prop('disabled', this.checked);
+    });
+    $('.ccrgpd-use-logo').on('click', function() {
+        $('#seopress_social_knowledge_img').val($(this).data('url'));
     });
     
     // ==================== ACCORDÉON RGPD ====================
@@ -104,6 +117,12 @@ jQuery(document).ready(function($) {
                     var d = r.data;
                     var html = '<div class="siret-result success">';
                     html += '<h4>✅ ' + d.raison_sociale + '</h4>';
+                    // Contrôle visuel : bien la bonne structure ? (inversion de SIREN, homonyme...)
+                    html += '<p class="import-identity"><strong>' + (d.forme_juridique || '?') + '</strong>, activité NAF <strong>' + (d.activite || '?') + '</strong>, ' + (d.etat || '') + '. Vérifiez qu\'il s\'agit bien du client avant d\'importer.</p>';
+                    var otherEntity = currentValues.client_siren && d.siren && currentValues.client_siren.replace(/\s/g, '') !== d.siren;
+                    if (otherEntity) {
+                        html += '<div class="notice notice-warning inline" style="margin:10px 0;padding:8px 12px">⚠️ SIREN différent de celui enregistré (' + currentValues.client_siren + ') : vérifiez le responsable de publication avant d\'importer, le capital actuel n\'est pas repris.</div>';
+                    }
                     
                     // Tableau d'aperçu
                     html += '<div class="import-preview"><table>';
@@ -146,7 +165,7 @@ jQuery(document).ready(function($) {
                             for (var j = 0; j < d.dirigeants.length; j++) {
                                 var checked = j === 0 ? ' checked' : '';
                                 html += '<label><input type="radio" name="sel_dirigeant" value="' + j + '"' + checked + '> ';
-                                html += d.dirigeants[j].full_name + ' — <em>' + d.dirigeants[j].qualite + '</em></label>';
+                                html += d.dirigeants[j].full_name + ' (<em>' + d.dirigeants[j].qualite + '</em>)</label>';
                             }
                             html += '</div>';
                         }
@@ -155,7 +174,7 @@ jQuery(document).ready(function($) {
                         html += '<div class="capital-input">';
                         html += '<strong>💰 Capital social</strong> <small>(non disponible via l\'API)</small><br>';
                         html += '<a href="' + d.annuaire_url + '" target="_blank" rel="noopener">👉 Consulter sur Annuaire Entreprises</a><br><br>';
-                        html += '<label>Capital : <input type="text" id="import_capital" value="' + (currentValues.client_capital || '') + '" placeholder="Ex: 10 000 €" style="width:180px"></label>';
+                        html += '<label>Capital : <input type="text" id="import_capital" value="' + (otherEntity ? '' : (currentValues.client_capital || '')) + '" placeholder="Ex: 10 000 €" style="width:180px"></label>';
                         html += '</div>';
                     }
                     
@@ -223,7 +242,8 @@ jQuery(document).ready(function($) {
         setField('client_rcs', d.rcs);
         setField('client_responsable', dirigeant);
         
-        if (capital) {
+        // En mode écrasement, le capital est toujours réécrit (vide pour une association)
+        if (capital || overwrite) {
             setField('client_capital', capital);
         }
         

@@ -116,6 +116,7 @@ class CCRGPD_Constants
         '5_years' => '5 ans',
         'until_unsubscribe' => 'Jusqu\'à désinscription',
         'contract_plus_3' => 'Durée du contrat + 3 ans',
+        'until_account_deletion' => 'Jusqu\'à la suppression du compte',
     ];
 
     public const LEGAL_BASIS = [
@@ -180,6 +181,13 @@ class CCRGPD_Constants
             'pc_table_retention' => 'Durée de conservation',
             'pc_recipients' => 'Destinataires des données :',
             'pc_third_party' => 'Sous-traitants :',
+            'pc_retention_ip' => '%1$s (adresse IP anonymisée après %2$s)',
+
+            // Protection contre les robots (Cloudflare Turnstile)
+            'pc_antibot_title' => 'Protection contre les robots',
+            'pc_turnstile_text' => 'Nos formulaires sont protégés par Cloudflare Turnstile, service de Cloudflare, Inc. (États-Unis). À l\'affichage et à l\'envoi d\'un formulaire, Cloudflare reçoit votre adresse IP et des informations techniques sur votre navigateur (User-Agent, empreinte de connexion) afin de distinguer un visiteur humain d\'un robot. Ce traitement, strictement nécessaire à la sécurité du site, repose sur notre intérêt légitime et ne nécessite pas votre consentement. Cloudflare peut également utiliser ces données pour améliorer son service de détection, en tant que responsable de traitement. Les transferts vers les États-Unis sont encadrés par le Data Privacy Framework UE-États-Unis, auquel Cloudflare est certifiée.',
+            'pc_turnstile_more' => 'Pour en savoir plus : %s.',
+            'pc_turnstile_link' => 'politique de confidentialité de Turnstile',
             
             // Droits
             'rights_title' => 'Exercer vos droits',
@@ -237,6 +245,11 @@ class CCRGPD_Constants
             'pc_table_retention' => 'Retention period',
             'pc_recipients' => 'Data recipients:',
             'pc_third_party' => 'Subcontractors:',
+            'pc_retention_ip' => '%1$s (IP address anonymised after %2$s)',
+            'pc_antibot_title' => 'Protection against bots',
+            'pc_turnstile_text' => 'Our forms are protected by Cloudflare Turnstile, a service of Cloudflare, Inc. (United States). When a form is displayed or submitted, Cloudflare receives your IP address and technical information about your browser (User-Agent, connection fingerprint) in order to tell a human visitor from a bot. This processing is strictly necessary for the security of the site, relies on our legitimate interest and does not require your consent. Cloudflare may also use this data to improve its detection service, as a data controller. Transfers to the United States are covered by the EU-U.S. Data Privacy Framework, under which Cloudflare is certified.',
+            'pc_turnstile_more' => 'Learn more: %s.',
+            'pc_turnstile_link' => 'Turnstile privacy policy',
             'rights_title' => 'Exercise Your Rights',
             'rights_intro' => 'For any information or to exercise your data protection rights regarding personal data managed by %s, you can contact us:',
             'rights_email' => 'by email at %s',

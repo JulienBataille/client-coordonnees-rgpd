@@ -256,3 +256,18 @@
     background: #fff8e5;
     border-left-color: #ffb900;
 }
+
+/* 4.3.0 : alertes de cohérence (Forminator, SEOPress) */
+.ccrgpd-alert {
+    margin: 8px 0 0;
+    padding: 8px 12px;
+    border-left: 4px solid #72aee6;
+    background: #f0f6fc;
+    font-size: 13px;
+}
+.ccrgpd-alert--warning { border-left-color: #dba617; background: #fcf9e8; }
+.ccrgpd-alert--error { border-left-color: #d63638; background: #fcf0f1; }
+.plugin-badge.plugin-turnstile { background: #f38020; color: #fff; }
+.ccrgpd-seo-identity input[disabled] { background: #f6f7f7; color: #3c434a; }
+.ccrgpd-seo-identity .status-existing,
+.ccrgpd-seo-identity .status-replace { margin-left: 8px; font-size: 12px; }

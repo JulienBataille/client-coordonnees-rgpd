@@ -89,10 +89,7 @@ class CCRGPD_Shortcodes
 
         foreach ($forms as $id => $f) {
             $config = $rgpd['forms'][$id] ?? [];
-            
-            // Si jamais configuré → actif par défaut, sinon vérifier enabled
-            $isEnabled = empty($config) ? true : !empty($config['enabled']);
-            if (!$isEnabled) continue;
+            if (!self::is_form_enabled($rgpd, $id)) continue;
             
             // Récupérer les suggestions pour les valeurs par défaut
             $suggestions = CCRGPD_Form_Analyzer::getSuggestions($f['name']);
@@ -118,7 +115,7 @@ class CCRGPD_Shortcodes
             $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;width:35%;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_table_data') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . wp_kses_post($dataText) . '</td></tr>';
             $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_table_purpose') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html(($config['purpose'] ?? '') ?: $suggestions['purpose'] ?: '-') . '</td></tr>';
             $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_table_legal') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html(CCRGPD_Constants::LEGAL_BASIS[$config['legal_basis'] ?? $suggestions['legal_basis']] ?? '-') . '</td></tr>';
-            $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_table_retention') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html(CCRGPD_Constants::RETENTION[$config['retention'] ?? $suggestions['retention']] ?? '-') . '</td></tr>';
+            $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_table_retention') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html(CCRGPD_Retention::resolve($f, $config)['label']) . '</td></tr>';
             
             if (!empty($config['recipients'])) {
                 $out .= '<tr><td style="padding:10px 15px;border:1px solid #ddd;vertical-align:top;background:#fafafa"><strong>' . self::t('pc_recipients') . '</strong></td><td style="padding:10px 15px;border:1px solid #ddd">' . esc_html($config['recipients']) . '</td></tr>';
@@ -164,8 +161,8 @@ class CCRGPD_Shortcodes
         } else {
             // Fallback si WP Consent n'est pas installé
             $out .= '<ul>';
-            $out .= '<li><strong>Google Analytics</strong> : _ga, _gid, _gat — Mesure d\'audience (durée : 13 mois maximum)</li>';
-            $out .= '<li><strong>WordPress</strong> : wordpress_*, wp-settings-* — Gestion de session utilisateur (durée : session)</li>';
+            $out .= '<li><strong>Google Analytics</strong> : _ga, _gid, _gat, mesure d\'audience (durée : 13 mois maximum)</li>';
+            $out .= '<li><strong>WordPress</strong> : wordpress_*, wp-settings-*, gestion de session utilisateur (durée : session)</li>';
             $out .= '</ul>';
             $out .= '<p>' . self::t('cookies_manage_text') . '</p>';
         }
@@ -260,13 +257,13 @@ class CCRGPD_Shortcodes
         $rgpd = get_option('rgpd_settings', []);
         $forms = self::get_all_forms();
         
-        // Vérifier s'il y a des formulaires activés
+        // Formulaires activés (jamais configuré = actif, comme dans [rgpd_mentions])
         $has_forms = false;
+        $has_turnstile = false;
         foreach ($forms as $id => $f) {
-            if (!empty($rgpd['forms'][$id]['enabled'])) {
-                $has_forms = true;
-                break;
-            }
+            if (!self::is_form_enabled($rgpd, $id)) continue;
+            $has_forms = true;
+            if (!empty($f['turnstile'])) $has_turnstile = true;
         }
 
         ob_start();
@@ -291,6 +288,15 @@ class CCRGPD_Shortcodes
             echo '<div class="ccrgpd-section ccrgpd-section--traitements">';
             echo '<h2>' . esc_html(self::t('pc_treatments')) . '</h2>';
             echo self::rgpd_mentions([]);
+            echo '</div>';
+        }
+
+        // === PROTECTION CONTRE LES ROBOTS (Turnstile, sans cookie : non listé par WPConsent) ===
+        if ($has_turnstile) {
+            echo '<div class="ccrgpd-section ccrgpd-section--antibot">';
+            echo '<h2>' . esc_html(self::t('pc_antibot_title')) . '</h2>';
+            echo '<p>' . esc_html(self::t('pc_turnstile_text')) . '</p>';
+            echo '<p>' . sprintf(esc_html(self::t('pc_turnstile_more')), '<a href="https://www.cloudflare.com/turnstile-privacy-policy/" target="_blank" rel="noopener nofollow">' . esc_html(self::t('pc_turnstile_link')) . '</a>') . '</p>';
             echo '</div>';
         }
 
@@ -329,7 +335,7 @@ class CCRGPD_Shortcodes
 
     // ==================== HELPERS ====================
 
-    private static function t($key)
+    public static function t($key)
     {
         $lang = self::get_lang();
         return CCRGPD_Constants::TRANSLATIONS[$lang][$key] 
@@ -337,11 +343,20 @@ class CCRGPD_Shortcodes
             ?? $key;
     }
 
-    private static function get_lang()
+    public static function get_lang()
     {
         $locale = get_locale();
         if (isset(CCRGPD_Constants::TRANSLATIONS[$locale])) return $locale;
         return (substr($locale, 0, 2) === 'en') ? 'en_US' : 'fr_FR';
+    }
+
+    /**
+     * Un formulaire jamais configuré est actif par défaut
+     */
+    public static function is_form_enabled($rgpd, $id)
+    {
+        $config = $rgpd['forms'][$id] ?? [];
+        return empty($config) ? true : !empty($config['enabled']);
     }
 
     private static function opt($key)
@@ -429,6 +444,9 @@ class CCRGPD_Shortcodes
                 'fields' => $fields,
                 'analysis' => $analysis,
                 'plugin' => 'Forminator',
+                'form_id' => (int) $formId,
+                'privacy' => CCRGPD_Forminator_Privacy::for_form((int) $formId, $form->settings ?? []),
+                'turnstile' => CCRGPD_Forminator_Privacy::uses_turnstile($form->fields),
             ];
         }
         return $forms;

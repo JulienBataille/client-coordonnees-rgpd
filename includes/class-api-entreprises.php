@@ -64,6 +64,8 @@ class CCRGPD_API_Entreprises
             'siret' => $siege['siret'] ?? '',
             'siren' => $siren,
             'forme_juridique' => CCRGPD_Constants::NATURE_JURIDIQUE[$nature] ?? 'Autre',
+            'activite' => $e['activite_principale'] ?? '',
+            'etat' => ($e['etat_administratif'] ?? 'A') === 'A' ? 'active' : 'cessée',
             'tva' => ($is_association || $is_public) ? '' : self::calc_tva($siren),  // Pas de TVA par défaut
             'rcs' => $no_rcs ? '' : self::format_rcs($siren, $cp),  // Pas de RCS
             'is_association' => $is_association,

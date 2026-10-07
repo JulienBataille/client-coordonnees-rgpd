@@ -68,8 +68,13 @@ class CCRGPD_Admin
     {
         if ($hook !== 'toplevel_page_' . CCRGPD_Constants::MENU_SLUG) return;
         
-        wp_enqueue_style('ccrgpd-admin', CCRGPD_URL . 'assets/css/admin.css', [], CCRGPD_VERSION);
-        wp_enqueue_script('ccrgpd-admin', CCRGPD_URL . 'assets/js/admin.js', ['jquery'], CCRGPD_VERSION, true);
+        // Version + date du fichier : le cache navigateur (W3TC, un an sur les statiques) ne sert jamais un ancien fichier
+        $ver = function ($file) {
+            $path = CCRGPD_PATH . $file;
+            return CCRGPD_VERSION . (is_readable($path) ? '.' . filemtime($path) : '');
+        };
+        wp_enqueue_style('ccrgpd-admin', CCRGPD_URL . 'assets/css/admin.css', [], $ver('assets/css/admin.css'));
+        wp_enqueue_script('ccrgpd-admin', CCRGPD_URL . 'assets/js/admin.js', ['jquery'], $ver('assets/js/admin.js'), true);
         wp_localize_script('ccrgpd-admin', 'ccrgpd', [
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('ccrgpd_nonce'),
@@ -112,12 +117,18 @@ class CCRGPD_Admin
         ?>
         <div class="wrap">
             <h1><span class="dashicons dashicons-id"></span> Coordonnées & RGPD</h1>
+            <?php if (($_GET['ccrgpd_seo'] ?? '') === 'saved') : ?>
+                <div class="notice notice-success is-dismissible"><p>✅ Données enregistrées dans SEOPress.</p></div>
+            <?php elseif (($_GET['ccrgpd_seo'] ?? '') === 'incompatible') : ?>
+                <div class="notice notice-error is-dismissible"><p>SEOPress absent ou trop ancien (<?php echo esc_html(CCRGPD_SEOPress::MIN_VERSION); ?> minimum) : rien n'a été enregistré.</p></div>
+            <?php endif; ?>
             
             <nav class="nav-tab-wrapper">
                 <a href="#tab-coordonnees" class="nav-tab nav-tab-active">👤 Coordonnées</a>
                 <a href="#tab-juridique" class="nav-tab">⚖️ Juridique</a>
                 <a href="#tab-agence" class="nav-tab">🏢 Agence</a>
                 <a href="#tab-rgpd" class="nav-tab">🛡️ RGPD</a>
+                <a href="#tab-seo" class="nav-tab">🔎 SEO</a>
                 <a href="#tab-shortcodes" class="nav-tab">🔧 Shortcodes</a>
             </nav>
             
@@ -277,6 +288,17 @@ class CCRGPD_Admin
                     <div class="ccrgpd-box">
                         <h2>Configuration RGPD des formulaires</h2>
                         <p class="description">Activez et configurez chaque formulaire pour la politique de confidentialité.</p>
+                        <?php
+                        $alert_count = 0;
+                        foreach ($forms as $fid => $fdata) {
+                            if (!CCRGPD_Shortcodes::is_form_enabled($rgpd, $fid)) continue;
+                            foreach (CCRGPD_Retention::resolve($fdata, $rgpd['forms'][$fid] ?? [])['alerts'] as $a) {
+                                if ($a['level'] !== 'info') $alert_count++;
+                            }
+                        }
+                        if ($alert_count) : ?>
+                            <div class="notice notice-warning inline"><p>⚠️ <?php echo (int) $alert_count; ?> incohérence(s) entre la politique de confidentialité et les réglages Forminator : détail sous chaque formulaire.</p></div>
+                        <?php endif; ?>
                         
                         <?php if (!$has_forminator && !$has_sureforms) : ?>
                             <div class="notice notice-info inline">
@@ -314,6 +336,7 @@ class CCRGPD_Admin
                                     </label>
                                     <div class="rgpd-form-title">
                                         <strong><?php echo esc_html($form['name']); ?></strong> <?php echo $plugin_badge; ?>
+                                        <?php if (!empty($form['turnstile'])) : ?><span class="plugin-badge plugin-turnstile" title="Paragraphe Cloudflare Turnstile ajouté à la politique">Turnstile</span><?php endif; ?>
                                         <span class="meta"><?php echo count($form['fields']); ?> champs</span>
                                     </div>
                                     <span class="dashicons dashicons-arrow-down-alt2"></span>
@@ -388,11 +411,27 @@ class CCRGPD_Admin
                                         <tr>
                                             <th>Conservation</th>
                                             <td>
-                                                <select name="rgpd_settings[forms][<?php echo $id; ?>][retention]">
+                                                <?php $retention = CCRGPD_Retention::resolve($form, $config); ?>
+                                                <select name="rgpd_settings[forms][<?php echo esc_attr($id); ?>][retention]">
+                                                    <?php if (!empty($form['privacy'])) : ?>
+                                                        <option value="forminator" <?php selected($retention['key'], 'forminator'); ?>>Selon Forminator<?php echo $form['privacy']['stored'] && !$form['privacy']['retention']['forever'] ? ' (' . esc_html(CCRGPD_Forminator_Privacy::label($form['privacy']['retention'])) . ')' : ''; ?></option>
+                                                    <?php endif; ?>
                                                     <?php foreach (CCRGPD_Constants::RETENTION as $key => $label) : ?>
-                                                        <option value="<?php echo $key; ?>" <?php selected($config['retention'] ?? $suggestions['retention'], $key); ?>><?php echo esc_html($label); ?></option>
+                                                        <option value="<?php echo esc_attr($key); ?>" <?php selected($retention['key'], $key); ?>><?php echo esc_html($label); ?></option>
                                                     <?php endforeach; ?>
                                                 </select>
+                                                <?php if (!empty($form['privacy'])) :
+                                                    $fp = $form['privacy'];
+                                                    $state = !$fp['stored']
+                                                        ? 'soumissions non stockées'
+                                                        : CCRGPD_Forminator_Privacy::label($fp['retention']) . ($fp['source'] === 'form' ? ' (réglage propre au formulaire)' : ' (réglage global)')
+                                                          . ', IP : ' . CCRGPD_Forminator_Privacy::label($fp['ip']);
+                                                    ?>
+                                                    <p class="description">Forminator : <?php echo esc_html($state); ?>. Politique : <strong><?php echo esc_html($retention['label']); ?></strong></p>
+                                                <?php endif; ?>
+                                                <?php foreach ($retention['alerts'] as $a) : ?>
+                                                    <div class="ccrgpd-alert ccrgpd-alert--<?php echo esc_attr($a['level']); ?>"><?php echo esc_html($a['message']); ?></div>
+                                                <?php endforeach; ?>
                                             </td>
                                         </tr>
                                         <tr>
@@ -413,6 +452,11 @@ class CCRGPD_Admin
                 </form>
             </div>
             
+            <!-- ONGLET SEO (SEOPress) - formulaire séparé, enregistré par admin-post.php -->
+            <div id="tab-seo" class="tab-content">
+                <?php self::render_seo_tab(); ?>
+            </div>
+
             <!-- ONGLET SHORTCODES -->
             <div id="tab-shortcodes" class="tab-content">
                 <div class="ccrgpd-box">
@@ -439,6 +483,146 @@ class CCRGPD_Admin
                 </div>
             </div>
         </div>
+        <?php
+    }
+
+    private static function render_seo_tab()
+    {
+        if (!CCRGPD_SEOPress::is_active()) {
+            echo '<div class="ccrgpd-box"><h2>Données structurées (SEOPress)</h2><div class="notice notice-info inline"><p>SEOPress n\'est pas actif sur ce site.</p></div></div>';
+            return;
+        }
+        if (!CCRGPD_SEOPress::is_compatible()) {
+            echo '<div class="ccrgpd-box"><h2>Données structurées (SEOPress)</h2><div class="notice notice-warning inline"><p>SEOPress ' . esc_html(SEOPRESS_VERSION) . ' détecté : version ' . esc_html(CCRGPD_SEOPress::MIN_VERSION) . ' minimum requise (champs d\'adresse du Knowledge Graph).</p></div></div>';
+            return;
+        }
+
+        $opts = CCRGPD_SEOPress::current();
+        $sync = CCRGPD_SEOPress::is_sync_enabled();
+        $ours = CCRGPD_SEOPress::identity_values();
+        $settings = CCRGPD_SEOPress::settings();
+        $icon = CCRGPD_SEOPress::square_icon();
+        $theme_logo = CCRGPD_SEOPress::theme_logo();
+        $val = function ($key) use ($opts) { return (string) ($opts[$key] ?? ''); };
+        ?>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" id="form-seo">
+            <input type="hidden" name="action" value="ccrgpd_save_seopress">
+            <?php wp_nonce_field('ccrgpd_save_seopress'); ?>
+
+            <div class="ccrgpd-box">
+                <h2>Données structurées (SEOPress <?php echo esc_html(SEOPRESS_VERSION); ?>)</h2>
+                <p class="description">SEOPress imprime le Knowledge Graph (JSON-LD de l'organisation) sur la page d'accueil. Les valeurs ci-dessous sont celles de SEOPress ; l'enregistrement les écrit dans SEOPress, sans toucher à ses autres réglages.</p>
+                <?php foreach (CCRGPD_SEOPress::checks() as $c) : ?>
+                    <div class="ccrgpd-alert ccrgpd-alert--<?php echo esc_attr($c['level']); ?>"><?php echo esc_html($c['message']); ?></div>
+                <?php endforeach; ?>
+                <p>
+                    <label><input type="checkbox" name="ccrgpd_sync" value="1" id="ccrgpd_sync" <?php checked($sync); ?>> <strong>Synchroniser automatiquement les champs d'identité</strong> depuis les onglets Coordonnées et Juridique</label>
+                    <?php if ($settings['last_sync']) : ?><br><small>Dernière écriture dans SEOPress : <?php echo esc_html(date_i18n('d/m/Y H:i', (int) $settings['last_sync'] + (int) (get_option('gmt_offset') * HOUR_IN_SECONDS))); ?></small><?php endif; ?>
+                </p>
+            </div>
+
+            <div class="ccrgpd-box">
+                <h2>Identité</h2>
+                <p class="description"><?php echo $sync ? 'Synchronisée : ces champs se modifient dans les onglets Coordonnées et Juridique, et sont réécrits dans SEOPress à chaque enregistrement.' : 'Synchronisation désactivée : saisie libre, écrite telle quelle dans SEOPress.'; ?></p>
+                <table class="form-table ccrgpd-seo-identity">
+                    <?php foreach (CCRGPD_SEOPress::IDENTITY_FIELDS as $key => $label) :
+                        $theirs = $val($key);
+                        $mine = $ours[$key] ?? null;
+                        ?>
+                        <tr>
+                            <th><label for="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></label></th>
+                            <td>
+                                <input type="text" class="regular-text" id="<?php echo esc_attr($key); ?>" name="seo[<?php echo esc_attr($key); ?>]" value="<?php echo esc_attr($sync && $mine !== null ? $mine : $theirs); ?>" <?php disabled($sync); ?>>
+                                <?php if ($mine === null) : ?>
+                                    <span class="status-replace">non synchronisé (adresse non reconnue)</span>
+                                <?php elseif ($theirs === $mine) : ?>
+                                    <span class="status-existing">✓ identique dans SEOPress</span>
+                                <?php else : ?>
+                                    <span class="status-replace">⚠️ SEOPress : <?php echo esc_html($theirs !== '' ? $theirs : '(vide)'); ?></span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </table>
+            </div>
+
+            <div class="ccrgpd-box">
+                <h2>Description de l'entité</h2>
+                <table class="form-table">
+                    <tr>
+                        <th><label for="seopress_social_knowledge_type">Type d'entité</label></th>
+                        <td>
+                            <select name="seo[seopress_social_knowledge_type]" id="seopress_social_knowledge_type">
+                                <?php $type = $val('seopress_social_knowledge_type') ?: 'none'; ?>
+                                <?php foreach (CCRGPD_SEOPress::TYPES as $key => $label) : ?>
+                                    <option value="<?php echo esc_attr($key); ?>" <?php selected($type, $key); ?>><?php echo esc_html($label); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="description">Association : NGO. Artisan, commerce, restaurant : LocalBusiness (adresse complète obligatoire).</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="seopress_social_knowledge_name">Nom affiché</label></th>
+                        <td>
+                            <input type="text" class="regular-text" name="seo[seopress_social_knowledge_name]" id="seopress_social_knowledge_name" value="<?php echo esc_attr($val('seopress_social_knowledge_name')); ?>" placeholder="<?php echo esc_attr(get_bloginfo('name')); ?>">
+                            <p class="description">Vide : SEOPress reprend le nom du site (« <?php echo esc_html(get_bloginfo('name')); ?> »), y compris s'il change.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="seopress_social_knowledge_desc">Description</label></th>
+                        <td>
+                            <textarea class="large-text" rows="3" name="seo[seopress_social_knowledge_desc]" id="seopress_social_knowledge_desc"><?php echo esc_textarea($val('seopress_social_knowledge_desc')); ?></textarea>
+                            <p class="description">Une à deux phrases sur l'activité. Vide : SEOPress affiche le nom du site à la place.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="seopress_social_knowledge_img">Logo (URL)</label></th>
+                        <td>
+                            <input type="url" class="large-text" name="seo[seopress_social_knowledge_img]" id="seopress_social_knowledge_img" value="<?php echo esc_attr($val('seopress_social_knowledge_img')); ?>">
+                            <p>
+                                <?php if ($icon) : ?>
+                                    <button type="button" class="button button-secondary ccrgpd-use-logo" data-url="<?php echo esc_attr($icon['url']); ?>">Icône carrée du site (<?php echo (int) $icon['w']; ?> x <?php echo (int) $icon['h']; ?>)</button>
+                                <?php endif; ?>
+                                <?php if ($theme_logo) : ?>
+                                    <button type="button" class="button button-secondary ccrgpd-use-logo" data-url="<?php echo esc_attr($theme_logo['url']); ?>">Logo du thème<?php echo $theme_logo['w'] ? ' (' . (int) $theme_logo['w'] . ' x ' . (int) $theme_logo['h'] . ')' : ''; ?></button>
+                                <?php endif; ?>
+                            </p>
+                            <p class="description">Google demande au moins <?php echo (int) CCRGPD_SEOPress::LOGO_MIN; ?> x <?php echo (int) CCRGPD_SEOPress::LOGO_MIN; ?> px : un logo carré passe mieux qu'un logo en bandeau.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label for="seopress_social_knowledge_region">Région</label></th>
+                        <td><input type="text" class="regular-text" name="seo[seopress_social_knowledge_region]" id="seopress_social_knowledge_region" value="<?php echo esc_attr($val('seopress_social_knowledge_region')); ?>" placeholder="Nouvelle-Aquitaine"></td>
+                    </tr>
+                    <tr>
+                        <th><label for="seopress_social_knowledge_founding_date">Date de création</label></th>
+                        <td><input type="text" class="regular-text" name="seo[seopress_social_knowledge_founding_date]" id="seopress_social_knowledge_founding_date" value="<?php echo esc_attr($val('seopress_social_knowledge_founding_date')); ?>" placeholder="AAAA ou AAAA-MM-JJ"></td>
+                    </tr>
+                    <tr>
+                        <th><label for="seopress_social_knowledge_employees">Effectif</label></th>
+                        <td><input type="number" min="0" class="small-text" name="seo[seopress_social_knowledge_employees]" id="seopress_social_knowledge_employees" value="<?php echo esc_attr($val('seopress_social_knowledge_employees')); ?>"></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="ccrgpd-box">
+                <h2>Réseaux sociaux</h2>
+                <table class="form-table">
+                    <?php foreach (CCRGPD_SEOPress::SOCIAL_FIELDS as $key => $label) : ?>
+                        <tr>
+                            <th><label for="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></label></th>
+                            <td><input type="<?php echo $key === 'seopress_social_accounts_twitter' ? 'text' : 'url'; ?>" class="large-text" name="seo[<?php echo esc_attr($key); ?>]" id="<?php echo esc_attr($key); ?>" value="<?php echo esc_attr($val($key)); ?>"></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <tr>
+                        <th><label for="seopress_social_accounts_extra">Autres profils</label></th>
+                        <td><textarea class="large-text" rows="3" name="seo[seopress_social_accounts_extra]" id="seopress_social_accounts_extra" placeholder="Une URL par ligne"><?php echo esc_textarea($val('seopress_social_accounts_extra')); ?></textarea></td>
+                    </tr>
+                </table>
+            </div>
+
+            <?php submit_button('💾 Enregistrer dans SEOPress'); ?>
+        </form>
         <?php
     }
 

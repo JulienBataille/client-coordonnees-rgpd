@@ -284,6 +284,8 @@ class CCRGPD_Form_Analyzer
         $simplified = [];
         $hasAddress = false;
         $hasName = false;
+        $hasEmail = false;
+        $emailKeywords = ['mail', 'courriel'];
         
         // Mots-clés pour regrouper
         $addressKeywords = ['adresse', 'ville', 'city', 'code postal', 'cp', 'zip', 'pays', 'country', 'rue', 'street', 'postale'];
@@ -291,6 +293,22 @@ class CCRGPD_Form_Analyzer
         
         foreach ($fields as $field) {
             $lower = mb_strtolower(trim($field), 'UTF-8');
+
+            // E-mail en premier : « Adresse e-mail » ne doit pas devenir « adresse postale »
+            $isEmail = false;
+            foreach ($emailKeywords as $kw) {
+                if (strpos($lower, $kw) !== false) {
+                    $isEmail = true;
+                    break;
+                }
+            }
+            if ($isEmail) {
+                if (!$hasEmail) {
+                    $simplified[] = 'adresse e-mail';
+                    $hasEmail = true;
+                }
+                continue;
+            }
             
             // Vérifier si c'est un champ d'adresse
             $isAddress = false;
@@ -389,97 +407,103 @@ class CCRGPD_Form_Analyzer
         'contact' => [
             'purpose' => 'Répondre à votre demande de contact',
             'legal_basis' => 'consent',
-            'retention' => '3years',
+            'retention' => '3_years',
         ],
         'devis' => [
             'purpose' => 'Établir un devis personnalisé',
             'legal_basis' => 'consent',
-            'retention' => '3years',
+            'retention' => '3_years',
         ],
         'candidature' => [
             'purpose' => 'Traiter votre candidature',
             'legal_basis' => 'consent',
-            'retention' => '2years',
+            'retention' => '2_years',
         ],
         'recrutement' => [
             'purpose' => 'Traiter votre candidature',
             'legal_basis' => 'consent',
-            'retention' => '2years',
+            'retention' => '2_years',
         ],
         'cv' => [
             'purpose' => 'Traiter votre candidature',
             'legal_basis' => 'consent',
-            'retention' => '2years',
+            'retention' => '2_years',
         ],
         'emploi' => [
             'purpose' => 'Traiter votre candidature',
             'legal_basis' => 'consent',
-            'retention' => '2years',
+            'retention' => '2_years',
+        ],
+        // Avant « inscription » : le mot-clé est recherché en début de mot, mais l'ordre reste la règle
+        'desinscription' => [
+            'purpose' => 'Traiter votre demande de désinscription',
+            'legal_basis' => 'consent',
+            'retention' => '1_year',
         ],
         'newsletter' => [
             'purpose' => 'Envoyer notre newsletter',
             'legal_basis' => 'consent',
-            'retention' => 'unsubscribe',
+            'retention' => 'until_unsubscribe',
         ],
         'inscription' => [
             'purpose' => 'Gérer votre compte utilisateur',
             'legal_basis' => 'consent',
-            'retention' => 'account',
+            'retention' => 'until_account_deletion',
         ],
         'compte' => [
             'purpose' => 'Gérer votre compte utilisateur',
             'legal_basis' => 'consent',
-            'retention' => 'account',
+            'retention' => 'until_account_deletion',
         ],
         'register' => [
             'purpose' => 'Gérer votre compte utilisateur',
             'legal_basis' => 'consent',
-            'retention' => 'account',
+            'retention' => 'until_account_deletion',
         ],
         'reservation' => [
             'purpose' => 'Traiter votre réservation',
             'legal_basis' => 'consent',
-            'retention' => '3years',
+            'retention' => '3_years',
         ],
         'booking' => [
             'purpose' => 'Traiter votre réservation',
             'legal_basis' => 'consent',
-            'retention' => '3years',
+            'retention' => '3_years',
         ],
         'commande' => [
             'purpose' => 'Traiter votre commande',
             'legal_basis' => 'consent',
-            'retention' => '3years',
+            'retention' => '3_years',
         ],
         'order' => [
             'purpose' => 'Traiter votre commande',
             'legal_basis' => 'consent',
-            'retention' => '3years',
+            'retention' => '3_years',
         ],
         'rappel' => [
             'purpose' => 'Vous recontacter suite à votre demande',
             'legal_basis' => 'consent',
-            'retention' => '3years',
+            'retention' => '3_years',
         ],
         'callback' => [
             'purpose' => 'Vous recontacter suite à votre demande',
             'legal_basis' => 'consent',
-            'retention' => '3years',
+            'retention' => '3_years',
         ],
         'avis' => [
             'purpose' => 'Recueillir votre avis et améliorer nos services',
             'legal_basis' => 'consent',
-            'retention' => '3years',
+            'retention' => '3_years',
         ],
         'temoignage' => [
             'purpose' => 'Recueillir votre témoignage',
             'legal_basis' => 'consent',
-            'retention' => '3years',
+            'retention' => '3_years',
         ],
         'satisfaction' => [
             'purpose' => 'Mesurer votre satisfaction et améliorer nos services',
             'legal_basis' => 'consent',
-            'retention' => '3years',
+            'retention' => '3_years',
         ],
     ];
     
@@ -494,7 +518,8 @@ class CCRGPD_Form_Analyzer
         $normalized = self::normalize($formName);
         
         foreach (self::FORM_SUGGESTIONS as $keyword => $suggestions) {
-            if (strpos($normalized, $keyword) !== false) {
+            // Début de mot uniquement : « desinscription » ne doit pas déclencher « inscription »
+            if (preg_match('/\\b' . preg_quote($keyword, '/') . '/', $normalized)) {
                 return $suggestions;
             }
         }
@@ -503,7 +528,7 @@ class CCRGPD_Form_Analyzer
         return [
             'purpose' => '',
             'legal_basis' => 'consent',
-            'retention' => '3years',
+            'retention' => '3_years',
         ];
     }
 }
