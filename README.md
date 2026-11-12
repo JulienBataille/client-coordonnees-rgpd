@@ -4,7 +4,7 @@ Plugin WordPress qui centralise les coordonnées d'un site et génère ses pages
 
 Développé pour industrialiser la production de sites vitrines : les coordonnées sont saisies une seule fois dans un écran d'administration, puis diffusées partout via des shortcodes. Un changement de numéro de téléphone se répercute sur l'ensemble du site sans toucher au contenu.
 
-**Version courante :** 4.3.0 · **WordPress :** 5.0+ · **PHP :** 7.4+
+**Version courante :** 4.3.1 · **WordPress :** 5.0+ · **PHP :** 7.4+
 
 ---
 
@@ -159,6 +159,9 @@ GPL v2 ou ultérieure, comme WordPress.
 ---
 
 ## Historique
+
+**4.3.1**
+- Réglages de l'onglet RGPD (`rgpd_settings`) lisibles et modifiables par MCP via l'ability `matrys/option` du bridge MATRYS (filtre `matrys_bridge_option_whitelist`), avec le même nettoyage que l'écran de réglages.
 
 **4.3.0**
 - Correctif : les durées suggérées n'existaient pas dans la liste des durées. Un formulaire jamais configuré affichait « - » dans la politique, et le premier enregistrement de l'onglet RGPD enregistrait « 6 mois » sans que personne l'ait choisi. Les sites déjà configurés gardent leur valeur : l'onglet RGPD signale désormais l'écart avec Forminator.

@@ -24,6 +24,24 @@ class CCRGPD_Plugin
             add_action('update_option_' . $option, [__CLASS__, 'schedule_page_cache_flush'], 10, 0);
             add_action('add_option_' . $option, [__CLASS__, 'schedule_page_cache_flush'], 10, 0);
         }
+
+        // MCP (MATRYS MCP Bridge, ability matrys/option) : client_* et ccrgpd_* sont déjà
+        // sur la liste blanche du bridge ; on y ajoute les réglages de l'onglet RGPD.
+        add_filter('matrys_bridge_option_whitelist', [__CLASS__, 'bridge_whitelist']);
+
+        // Le nettoyage de rgpd_settings n'est branché par register_setting() que sur admin_init :
+        // on l'applique aussi aux écritures hors écran de réglages (MCP, WP-CLI, code).
+        add_filter('sanitize_option_rgpd_settings', [CCRGPD_Admin::class, 'sanitize_rgpd']);
+    }
+
+    /** Options du plugin rendues lisibles et modifiables par le bridge MCP MATRYS */
+    public static function bridge_whitelist($list)
+    {
+        $list = (array) $list;
+        if (!in_array('rgpd_settings', $list, true)) {
+            $list[] = 'rgpd_settings';
+        }
+        return $list;
     }
 
     /** Une seule purge en fin de requête, même si plusieurs options changent */
